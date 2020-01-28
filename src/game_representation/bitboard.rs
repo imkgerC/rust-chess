@@ -22,7 +22,7 @@
 /// use core::game_representation::bitboard;
 ///
 /// // creates bitboard with 2 set bits in the second to top rank
-/// assert_eq!(bitboard::from_repr("8/0303/8/8/8/8/8/8"), 4352);
+/// assert_eq!(bitboard::from_repr("8/0303/8/8/8/8/8/8").unwrap(), 4352);
 /// ```
 pub fn from_repr(repr: &str) -> Result<u64, &str> {
     let ranks: Vec<&str> = repr.split('/').collect();
