@@ -11,12 +11,12 @@ pub struct Board {
 
 impl Board {
     pub fn startpos() -> Board {
-        let pawns = bitboard::from_repr("8/00000000/8/8/8/8/00000000/8");
-        let kings = bitboard::from_repr("403/8/8/8/8/8/8/403");
-        let rooks = bitboard::from_repr("02030/8/8/8/8/8/8/02030");
-        let knights = bitboard::from_repr("10401/8/8/8/8/8/8/10401");
-        let bishops = bitboard::from_repr("200102/8/8/8/8/8/8/200102");
-        let whites = bitboard::from_repr("8/8/8/8/8/8/00000000/00000000");
+        let pawns = bitboard::from_repr("8/00000000/8/8/8/8/00000000/8").expect("Error in parsing pawn position");
+        let kings = bitboard::from_repr("403/8/8/8/8/8/8/403").expect("Error in parsing king position");
+        let rooks = bitboard::from_repr("02030/8/8/8/8/8/8/02030").expect("Error in parsing rook position");
+        let knights = bitboard::from_repr("10401/8/8/8/8/8/8/10401").expect("Error in parsing knight position");
+        let bishops = bitboard::from_repr("200102/8/8/8/8/8/8/200102").expect("Error in parsing bishop position");
+        let whites = bitboard::from_repr("8/8/8/8/8/8/00000000/00000000").expect("Error in parsing white position");
         return Board {
             pawns,
             rooks,
