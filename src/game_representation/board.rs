@@ -1,4 +1,4 @@
-use super::{bitboard, Action, PieceType};
+use super::{bitboard, Action, Color, PieceType};
 
 pub struct Board {
     bishops: u64,
@@ -11,12 +11,18 @@ pub struct Board {
 
 impl Board {
     pub fn startpos() -> Board {
-        let pawns = bitboard::from_repr("8/00000000/8/8/8/8/00000000/8").expect("Error in parsing pawn position");
-        let kings = bitboard::from_repr("403/8/8/8/8/8/8/403").expect("Error in parsing king position");
-        let rooks = bitboard::from_repr("02030/8/8/8/8/8/8/02030").expect("Error in parsing rook position");
-        let knights = bitboard::from_repr("10401/8/8/8/8/8/8/10401").expect("Error in parsing knight position");
-        let bishops = bitboard::from_repr("200102/8/8/8/8/8/8/200102").expect("Error in parsing bishop position");
-        let whites = bitboard::from_repr("8/8/8/8/8/8/00000000/00000000").expect("Error in parsing white position");
+        let pawns = bitboard::from_repr("8/00000000/8/8/8/8/00000000/8")
+            .expect("Error in parsing pawn position");
+        let kings =
+            bitboard::from_repr("403/8/8/8/8/8/8/403").expect("Error in parsing king position");
+        let rooks =
+            bitboard::from_repr("02030/8/8/8/8/8/8/02030").expect("Error in parsing rook position");
+        let knights = bitboard::from_repr("10401/8/8/8/8/8/8/10401")
+            .expect("Error in parsing knight position");
+        let bishops = bitboard::from_repr("200102/8/8/8/8/8/8/200102")
+            .expect("Error in parsing bishop position");
+        let whites = bitboard::from_repr("8/8/8/8/8/8/00000000/00000000")
+            .expect("Error in parsing white position");
         return Board {
             pawns,
             rooks,
@@ -25,6 +31,50 @@ impl Board {
             bishops,
             whites,
         };
+    }
+
+    pub fn execute_action(&mut self, action: &Action) {
+        let (from_x, from_y) = action.get_from();
+        let (to_x, to_y) = action.get_to();
+        let shift_from = from_x + from_y * 8;
+        let shift_to = to_x + to_y * 8;
+        let not_from_bit = !(1 << shift_from);
+        let not_to_bit = !(1 << shift_to);
+        let color = action.get_color();
+        let piecetype = action.get_piecetype();
+
+        let pawn_to_bit = ((piecetype == PieceType::Pawn) as u64) << shift_to;
+        let knight_to_bit = ((piecetype == PieceType::Knight) as u64) << shift_to;
+        let king_to_bit = ((piecetype == PieceType::King) as u64) << shift_to;
+        let white_to_bit = ((color == Color::White) as u64) << shift_to;
+        let bishop_to_bit =
+            ((piecetype == PieceType::Bishop || piecetype == PieceType::Queen) as u64) << shift_to;
+        let rook_to_bit =
+            ((piecetype == PieceType::Rook || piecetype == PieceType::Queen) as u64) << shift_to;
+        
+        // just unset everywhere, so we don't need complex logic
+        self.rooks = self.rooks & not_from_bit;
+        self.pawns = self.pawns & not_from_bit;
+        self.kings = self.kings & not_from_bit;
+        self.bishops = self.bishops & not_from_bit;
+        self.knights = self.knights & not_from_bit;
+        self.whites = self.whites & not_from_bit;
+
+        // just unset everywhere, so we don't need complex logic
+        self.rooks = self.rooks & not_to_bit;
+        self.pawns = self.pawns & not_to_bit;
+        self.kings = self.kings & not_to_bit;
+        self.bishops = self.bishops & not_to_bit;
+        self.knights = self.knights & not_to_bit;
+        self.whites = self.whites & not_to_bit;
+
+        // set with bit to avoid branching
+        self.kings = self.kings | king_to_bit;
+        self.pawns = self.pawns | pawn_to_bit;
+        self.knights = self.knights | knight_to_bit;
+        self.whites = self.whites | white_to_bit;
+        self.rooks = self.rooks | rook_to_bit;
+        self.bishops = self.bishops | bishop_to_bit;
     }
 
     /// returns the board-part of a FEN-string
@@ -322,6 +372,9 @@ mod tests {
 
     #[test]
     fn fen_startpos() {
-        assert_eq!(&Board::startpos().to_fen(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        assert_eq!(
+            &Board::startpos().to_fen(),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+        );
     }
 }
