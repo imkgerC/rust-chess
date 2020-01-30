@@ -1,5 +1,26 @@
 use super::{bitboard, Action, Color, PieceType};
 
+/// The board part of a chess game state
+/// 
+/// This is a simple minimal [bitboard](https://www.chessprogramming.org/Bitboards) implementation of a chess board.
+/// Its' internal structure is defined by only six bitboards, one for every piece type except queens
+/// and one for color. Queens are represented as a set bit on the bishop and rook bitboard.
+/// 
+/// The mapping of chess fields to shifts in the bitboard and to (x, y) position is shown in the following graphic.
+/// ```text
+///      a  b  c  d  e  f  g  h        a   b   c   d   e   f   g   h
+///   +-------------------------+   +---------------------------------+
+/// 8 |  0  1  2  3  4  5  6  7 | 8 | 0,0 1,0 2,0 3,0 4,0 5,0 6,0 7,0 | 8
+/// 7 |  8  9 10 11 12 13 14 15 | 7 | 0,1 1,1 2,1 3,1 4,1 5,1 6,1 7,1 | 7
+/// 6 | 16 17 18 19 20 21 22 23 | 6 | 0,2 1,2 2,2 3,2 4,2 5,2 6,2 7,2 | 6
+/// 5 | 24 25 26 27 28 29 30 31 | 5 | 0,3 1,3 2,3 3,3 4,3 5,3 6,3 7,3 | 5
+/// 4 | 32 33 34 35 36 37 38 39 | 4 | 0,4 1,4 2,4 3,4 4,4 5,4 6,4 7,4 | 4
+/// 3 | 40 41 42 43 44 45 46 47 | 3 | 0,5 1,5 2,5 3,5 4,5 5,5 6,5 7,5 | 3
+/// 2 | 48 49 50 51 52 53 54 55 | 2 | 0,6 1,6 2,6 3,6 4,6 5,6 6,6 7,6 | 2
+/// 1 | 56 57 58 59 60 61 62 63 | 1 | 0,7 1,7 2,7 3,7 4,7 5,7 6,7 7,7 | 1
+///   +-------------------------+   +---------------------------------+
+///      a  b  c  d  e  f  g  h        a   b   c   d   e   f   g   h
+/// ```
 pub struct Board {
     bishops: u64,
     rooks: u64,
@@ -10,6 +31,12 @@ pub struct Board {
 }
 
 impl Board {
+    /// Returns a board initialized with the standard chess starting position
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::Board;
+    /// assert_eq!(&Board::startpos().to_fen(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    /// ```
     pub fn startpos() -> Board {
         let pawns = bitboard::from_repr("8/00000000/8/8/8/8/00000000/8")
             .expect("Error in parsing pawn position");
@@ -33,7 +60,25 @@ impl Board {
         };
     }
 
+    /// This method will execute any action on the board, using only the information inside
+    /// the action. It will not check, if this move is legal in any way: USE WITH CAUTION.
+    /// There are not tests to look if a particular field even has the needed piece, if it does not,
+    /// this piece will be created from thin air.
+    /// There is no checking if a check occurs through this action or king is captured or a king is even
+    /// on the board.
+    /// 
+    /// Currently does not support promotions or castling.
+    /// 
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::{Board, Color, PieceType, Action};
+    /// let mut b = Board::startpos();
+    /// let a = Action::new(4, 6, 4, 4, PieceType::Pawn, Color::White); // this is e2e4
+    /// b.execute_action(&a);
+    /// assert_eq!("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
+    /// ```
     pub fn execute_action(&mut self, action: &Action) {
+        // assumes action is legal
         let (from_x, from_y) = action.get_from();
         let (to_x, to_y) = action.get_to();
         let shift_from = from_x + from_y * 8;
@@ -77,7 +122,11 @@ impl Board {
         self.bishops = self.bishops | bishop_to_bit;
     }
 
-    /// returns the board-part of a FEN-string
+    /// Returns the board-part of a FEN-string
+    /// 
+    /// For examples see [`execute_action`]
+    /// 
+    /// [`execute_action`]: #method.execute_action
     pub fn to_fen(&self) -> String {
         let mut res_str = String::new();
         for rank in 0..8 {
@@ -104,6 +153,14 @@ impl Board {
         return res_str;
     }
 
+    /// Constructs a new Board from only the board-part of a FEN
+    /// 
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::Board;
+    /// let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    /// assert_eq!(&b.to_fen(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    /// ```
     pub fn from_fen(fen: &str) -> Board {
         let mut pawns = 0;
         let mut whites = 0;
@@ -272,6 +329,21 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wikipedia_fen_opening_test() {
+        // moves and fens taken from wikipedia [https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation]
+        let mut b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        let a = Action::new(4, 6, 4, 4, PieceType::Pawn, Color::White);
+        b.execute_action(&a);
+        assert_eq!("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
+        let a = Action::new(2, 1, 2, 3, PieceType::Pawn, Color::Black);
+        b.execute_action(&a);
+        assert_eq!("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
+        let a = Action::new(6, 7, 5, 5, PieceType::Knight, Color::White);
+        b.execute_action(&a);
+        assert_eq!("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R", &b.to_fen());
+    }
 
     #[test]
     fn fen_io_test() {
