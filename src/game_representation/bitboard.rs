@@ -75,6 +75,47 @@ pub fn from_repr(repr: &str) -> Result<u64, &str> {
     return Ok(ret);
 }
 
+pub fn index_to_field_repr(index: u8) -> String {
+    let mut ret = String::new();
+    let file = index % 8;
+    let rank = index / 8;
+    ret.push_str(file_to_str(file));
+    ret.push_str(rank_to_str(rank));
+    return ret;
+}
+
+pub fn file_to_str(file: u8) -> &'static str {
+    return match file {
+        0 => "a",
+        1 => "b",
+        2 => "c",
+        3 => "d",
+        4 => "e",
+        5 => "f",
+        6 => "g",
+        7 => "h",
+        _ => {
+            panic!("file is too big");
+        }
+    };
+}
+
+pub fn rank_to_str(rank: u8) -> &'static str {
+    return match rank {
+        0 => "8",
+        1 => "7",
+        2 => "6",
+        3 => "5",
+        4 => "4",
+        5 => "3",
+        6 => "2",
+        7 => "1",
+        _ => {
+            panic!("file is too big");
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
