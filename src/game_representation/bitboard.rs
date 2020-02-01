@@ -84,6 +84,29 @@ pub fn index_to_field_repr(index: u8) -> String {
     return ret;
 }
 
+pub fn field_repr_to_index(repr: &str) -> u8 {
+    let chars: Vec<char> = repr.chars().collect();
+    assert!(chars.len() == 2);
+    let index = str_to_rank(&chars[1].to_string()) * 8 + str_to_file(&chars[0].to_string());
+    return index;
+}
+
+pub fn str_to_file(file: &str) -> u8 {
+    return match file {
+        "a" => 0,
+        "b" => 1,
+        "c" => 2,
+        "d" => 3,
+        "e" => 4,
+        "f" => 5,
+        "g" => 6,
+        "h" => 7,
+        _ => {
+            panic!("file is too big");
+        }
+    };
+}
+
 pub fn file_to_str(file: u8) -> &'static str {
     return match file {
         0 => "a",
@@ -98,6 +121,12 @@ pub fn file_to_str(file: u8) -> &'static str {
             panic!("file is too big");
         }
     };
+}
+
+pub fn str_to_rank(rank: &str) -> u8 {
+    let rank: u8 = rank.parse().expect("rank provided is not a number");
+    assert!(rank <= 8 && rank > 0);
+    return 8 - rank;
 }
 
 pub fn rank_to_str(rank: u8) -> &'static str {

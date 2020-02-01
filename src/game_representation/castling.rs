@@ -14,10 +14,17 @@ impl Castling {
         };
     }
 
+    #[inline(always)]
+    pub fn from_raw(data: u8) -> Castling {
+        return Castling { data };
+    }
+
+    #[inline(always)]
     pub fn is_available(&self, data: u8) -> bool {
         return (self.data & data) > 0;
     }
 
+    #[inline(always)]
     pub fn remove(&mut self, data: u8) {
         self.data = self.data & !data;
     }
