@@ -1,4 +1,4 @@
-use super::{Board, Color, Castling, bitboard};
+use super::{bitboard, Board, Castling, Color};
 
 pub struct Game {
     // 50 move rule
@@ -29,7 +29,7 @@ impl Game {
         match self.color_to_move {
             Color::White => {
                 ret.push_str("w ");
-            },
+            }
             Color::Black => {
                 ret.push_str("b ");
             }
@@ -80,6 +80,9 @@ mod tests {
     #[test]
     fn fen_startpos_test() {
         let state = Game::startpos();
-        assert_eq!(&state.to_fen(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        assert_eq!(
+            &state.to_fen(),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        );
     }
 }

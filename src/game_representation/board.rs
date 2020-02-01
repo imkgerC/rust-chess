@@ -1,11 +1,11 @@
 use super::{bitboard, Action, Color, PieceType};
 
 /// The board part of a chess game state
-/// 
+///
 /// This is a simple minimal [bitboard](https://www.chessprogramming.org/Bitboards) implementation of a chess board.
 /// Its' internal structure is defined by only six bitboards, one for every piece type except queens
 /// and one for color. Queens are represented as a set bit on the bishop and rook bitboard.
-/// 
+///
 /// The mapping of chess fields to shifts in the bitboard and to (x, y) position is shown in the following graphic.
 /// ```text
 ///      a  b  c  d  e  f  g  h        a   b   c   d   e   f   g   h
@@ -66,9 +66,9 @@ impl Board {
     /// this piece will be created from thin air.
     /// There is no checking if a check occurs through this action or king is captured or a king is even
     /// on the board.
-    /// 
+    ///
     /// Currently does not support promotions or castling.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use core::game_representation::{Board, Color, PieceType, Action};
@@ -96,7 +96,7 @@ impl Board {
             ((piecetype == PieceType::Bishop || piecetype == PieceType::Queen) as u64) << shift_to;
         let rook_to_bit =
             ((piecetype == PieceType::Rook || piecetype == PieceType::Queen) as u64) << shift_to;
-        
+
         // just unset everywhere, so we don't need complex logic
         self.rooks = self.rooks & not_from_bit;
         self.pawns = self.pawns & not_from_bit;
@@ -123,9 +123,9 @@ impl Board {
     }
 
     /// Returns the board-part of a FEN-string
-    /// 
+    ///
     /// For examples see [`execute_action`]
-    /// 
+    ///
     /// [`execute_action`]: #method.execute_action
     pub fn to_fen(&self) -> String {
         let mut res_str = String::new();
@@ -154,7 +154,7 @@ impl Board {
     }
 
     /// Constructs a new Board from only the board-part of a FEN
-    /// 
+    ///
     /// # Examples
     /// ```
     /// # use core::game_representation::Board;
@@ -339,10 +339,16 @@ mod tests {
         assert_eq!("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
         let a = Action::new(2, 1, 2, 3, PieceType::Pawn, Color::Black);
         b.execute_action(&a);
-        assert_eq!("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
+        assert_eq!(
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR",
+            &b.to_fen()
+        );
         let a = Action::new(6, 7, 5, 5, PieceType::Knight, Color::White);
         b.execute_action(&a);
-        assert_eq!("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R", &b.to_fen());
+        assert_eq!(
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R",
+            &b.to_fen()
+        );
     }
 
     #[test]

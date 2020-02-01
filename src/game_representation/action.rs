@@ -1,9 +1,8 @@
-pub use super::PieceType;
 pub use super::Color;
-
+pub use super::PieceType;
 
 /// A standard chess halfmove action.
-/// 
+///
 /// This struct contains a two byte representation of a move in chess. It only contains the moved piece type,
 /// the color of the playing player and from and to squares. Currently it does not support pawn promotions or castling.
 /// The internal structure will be subject to change and currently is as follows:
@@ -18,11 +17,18 @@ pub use super::Color;
 /// bit 7 => the last bit of the piece type
 pub struct Action {
     from: u8,
-    to: u8
+    to: u8,
 }
 
 impl Action {
-    pub fn new(from_x: u8, from_y: u8, to_x: u8, to_y: u8, piece: PieceType, color: Color) -> Action {
+    pub fn new(
+        from_x: u8,
+        from_y: u8,
+        to_x: u8,
+        to_y: u8,
+        piece: PieceType,
+        color: Color,
+    ) -> Action {
         assert!(from_x < 8);
         assert!(to_x < 8);
         assert!(from_y < 8);
@@ -31,7 +37,7 @@ impl Action {
         let color = color as u8;
         return Action {
             from: from_x | (from_y << 3) | (piece << 6),
-            to: to_x + (to_y << 3) | ((piece << 5) & 0b1000_0000)  | (color << 6)
+            to: to_x + (to_y << 3) | ((piece << 5) & 0b1000_0000) | (color << 6),
         };
     }
 

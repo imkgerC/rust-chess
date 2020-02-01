@@ -9,7 +9,9 @@ const BLACK_QUEENSIDE: u8 = 1 << 3;
 
 impl Castling {
     pub fn new() -> Castling {
-        return Castling { data: WHITE_KINGSIDE | WHITE_QUEENSIDE | BLACK_KINGSIDE | BLACK_QUEENSIDE };
+        return Castling {
+            data: WHITE_KINGSIDE | WHITE_QUEENSIDE | BLACK_KINGSIDE | BLACK_QUEENSIDE,
+        };
     }
 
     pub fn is_available(&self, data: u8) -> bool {

@@ -1,5 +1,5 @@
 /// Type of chess piece
-/// 
+///
 /// A simple enum containing only un-colored chess piece types. It is represented as a byte
 /// so that every variant has a unique number that can be used as an index. Those numbers are simply from 1-6.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -10,6 +10,5 @@ pub enum PieceType {
     Knight = 3,
     Rook = 4,
     Queen = 5,
-    Bishop = 6
+    Bishop = 6,
 }
-
