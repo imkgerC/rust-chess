@@ -35,41 +35,41 @@ impl Action {
         assert!(to_y < 8);
         let piece = piece as u8;
         let color = color as u8;
-        return Action {
+        Action {
             from: from_x | (from_y << 3) | (piece << 6),
-            to: to_x + (to_y << 3) | ((piece << 5) & 0b1000_0000) | (color << 6),
-        };
+            to: (to_x + (to_y << 3)) | ((piece << 5) & 0b1000_0000) | (color << 6),
+        }
     }
 
     #[inline(always)]
     pub fn get_from(&self) -> (u8, u8) {
-        return (self.from & 0b111, (self.from >> 3) & 0b111);
+        (self.from & 0b111, (self.from >> 3) & 0b111)
     }
 
     #[inline(always)]
     pub fn get_to(&self) -> (u8, u8) {
-        return (self.to & 0b111, (self.to >> 3) & 0b111);
+        (self.to & 0b111, (self.to >> 3) & 0b111)
     }
 
     #[inline(always)]
     pub fn get_from_raw(&self) -> u8 {
-        return self.from;
+        self.from
     }
 
     #[inline(always)]
     pub fn get_to_raw(&self) -> u8 {
-        return self.to;
+        self.to
     }
 
     #[inline(always)]
     pub fn get_color(&self) -> Color {
-        return unsafe { std::mem::transmute((self.to >> 6) & 1) };
+        unsafe { std::mem::transmute((self.to >> 6) & 1) }
     }
 
     #[inline(always)]
     pub fn get_piecetype(&self) -> PieceType {
         let piece = (self.from >> 6) | ((self.to >> 5) & 0b100);
-        return unsafe { std::mem::transmute(piece) };
+        unsafe { std::mem::transmute(piece) }
     }
 }
 

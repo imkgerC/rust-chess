@@ -1,4 +1,4 @@
-use super::{bitboard, Action, Color, PieceType};
+use super::{bitboard, Action, Color, ParserError, PieceType};
 
 /// The board part of a chess game state
 ///
@@ -50,14 +50,14 @@ impl Board {
             .expect("Error in parsing bishop position");
         let whites = bitboard::from_repr("8/8/8/8/8/8/00000000/00000000")
             .expect("Error in parsing white position");
-        return Board {
+        Board {
             pawns,
             rooks,
             knights,
             kings,
             bishops,
             whites,
-        };
+        }
     }
 
     /// This method will execute any action on the board, using only the information inside
@@ -98,28 +98,28 @@ impl Board {
             ((piecetype == PieceType::Rook || piecetype == PieceType::Queen) as u64) << shift_to;
 
         // just unset everywhere, so we don't need complex logic
-        self.rooks = self.rooks & not_from_bit;
-        self.pawns = self.pawns & not_from_bit;
-        self.kings = self.kings & not_from_bit;
-        self.bishops = self.bishops & not_from_bit;
-        self.knights = self.knights & not_from_bit;
-        self.whites = self.whites & not_from_bit;
+        self.rooks &= not_from_bit;
+        self.pawns &= not_from_bit;
+        self.kings &= not_from_bit;
+        self.bishops &= not_from_bit;
+        self.knights &= not_from_bit;
+        self.whites &= not_from_bit;
 
         // just unset everywhere, so we don't need complex logic
-        self.rooks = self.rooks & not_to_bit;
-        self.pawns = self.pawns & not_to_bit;
-        self.kings = self.kings & not_to_bit;
-        self.bishops = self.bishops & not_to_bit;
-        self.knights = self.knights & not_to_bit;
-        self.whites = self.whites & not_to_bit;
+        self.rooks &= not_to_bit;
+        self.pawns &= not_to_bit;
+        self.kings &= not_to_bit;
+        self.bishops &= not_to_bit;
+        self.knights &= not_to_bit;
+        self.whites &= not_to_bit;
 
         // set with bit to avoid branching
-        self.kings = self.kings | king_to_bit;
-        self.pawns = self.pawns | pawn_to_bit;
-        self.knights = self.knights | knight_to_bit;
-        self.whites = self.whites | white_to_bit;
-        self.rooks = self.rooks | rook_to_bit;
-        self.bishops = self.bishops | bishop_to_bit;
+        self.kings |= king_to_bit;
+        self.pawns |= pawn_to_bit;
+        self.knights |= knight_to_bit;
+        self.whites |= white_to_bit;
+        self.rooks |= rook_to_bit;
+        self.bishops |= bishop_to_bit;
     }
 
     /// Returns the board-part of a FEN-string
@@ -150,7 +150,7 @@ impl Board {
                 res_str.push_str("/");
             }
         }
-        return res_str;
+        res_str
     }
 
     /// Constructs a new Board from only the board-part of a FEN
@@ -158,10 +158,10 @@ impl Board {
     /// # Examples
     /// ```
     /// # use core::game_representation::Board;
-    /// let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    /// let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR").unwrap();
     /// assert_eq!(&b.to_fen(), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
     /// ```
-    pub fn from_fen(fen: &str) -> Board {
+    pub fn from_fen(fen: &str) -> Result<Board, ParserError> {
         let mut pawns = 0;
         let mut whites = 0;
         let mut knights = 0;
@@ -265,18 +265,18 @@ impl Board {
                 }
             }
         }
-        return Board {
+        Ok(Board {
             pawns,
             rooks,
             knights,
             kings,
             bishops,
             whites,
-        };
+        })
     }
 
     fn get_piecestr_on(&self, file: u8, rank: u8) -> &str {
-        return self.get_piecestr_at(rank * 8 + file);
+        self.get_piecestr_at(rank * 8 + file)
     }
 
     fn get_piecestr_at(&self, shift: u8) -> &str {
@@ -322,7 +322,7 @@ impl Board {
             }
             return "k";
         }
-        return "";
+        ""
     }
 }
 
@@ -333,7 +333,7 @@ mod tests {
     #[test]
     fn wikipedia_fen_opening_test() {
         // moves and fens taken from wikipedia [https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation]
-        let mut b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        let mut b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR").unwrap();
         let a = Action::new(4, 6, 4, 4, PieceType::Pawn, Color::White);
         b.execute_action(&a);
         assert_eq!("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
@@ -355,96 +355,121 @@ mod tests {
     fn fen_io_test() {
         assert_eq!(
             "r6r/1b2k1bq/8/8/7B/8/8/R3K2R",
-            &Board::from_fen("r6r/1b2k1bq/8/8/7B/8/8/R3K2R").to_fen()
+            &Board::from_fen("r6r/1b2k1bq/8/8/7B/8/8/R3K2R")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "8/8/8/2k5/2pP4/8/B7/4K3",
-            &Board::from_fen("8/8/8/2k5/2pP4/8/B7/4K3").to_fen()
+            &Board::from_fen("8/8/8/2k5/2pP4/8/B7/4K3").unwrap().to_fen()
         );
         assert_eq!(
             "r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR",
-            &Board::from_fen("r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR").to_fen()
+            &Board::from_fen("r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R",
-            &Board::from_fen("r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R").to_fen()
+            &Board::from_fen("r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R",
-            &Board::from_fen("2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R").to_fen()
+            &Board::from_fen("2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R",
-            &Board::from_fen("rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R").to_fen()
+            &Board::from_fen("rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "2r5/3pk3/8/2P5/8/2K5/8/8",
-            &Board::from_fen("2r5/3pk3/8/2P5/8/2K5/8/8").to_fen()
+            &Board::from_fen("2r5/3pk3/8/2P5/8/2K5/8/8")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R",
-            &Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R").to_fen()
+            &Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1",
             &Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1")
+                .unwrap()
                 .to_fen()
         );
         assert_eq!(
             "3k4/3p4/8/K1P4r/8/8/8/8",
-            &Board::from_fen("3k4/3p4/8/K1P4r/8/8/8/8").to_fen()
+            &Board::from_fen("3k4/3p4/8/K1P4r/8/8/8/8").unwrap().to_fen()
         );
         assert_eq!(
             "8/8/4k3/8/2p5/8/B2P2K1/8",
-            &Board::from_fen("8/8/4k3/8/2p5/8/B2P2K1/8").to_fen()
+            &Board::from_fen("8/8/4k3/8/2p5/8/B2P2K1/8")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "8/8/1k6/2b5/2pP4/8/5K2/8",
-            &Board::from_fen("8/8/1k6/2b5/2pP4/8/5K2/8").to_fen()
+            &Board::from_fen("8/8/1k6/2b5/2pP4/8/5K2/8")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "5k2/8/8/8/8/8/8/4K2R",
-            &Board::from_fen("5k2/8/8/8/8/8/8/4K2R").to_fen()
+            &Board::from_fen("5k2/8/8/8/8/8/8/4K2R").unwrap().to_fen()
         );
         assert_eq!(
             "3k4/8/8/8/8/8/8/R3K3",
-            &Board::from_fen("3k4/8/8/8/8/8/8/R3K3").to_fen()
+            &Board::from_fen("3k4/8/8/8/8/8/8/R3K3").unwrap().to_fen()
         );
         assert_eq!(
             "r3k2r/1b4bq/8/8/8/8/7B/R3K2R",
-            &Board::from_fen("r3k2r/1b4bq/8/8/8/8/7B/R3K2R").to_fen()
+            &Board::from_fen("r3k2r/1b4bq/8/8/8/8/7B/R3K2R")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "r3k2r/8/3Q4/8/8/5q2/8/R3K2R",
-            &Board::from_fen("r3k2r/8/3Q4/8/8/5q2/8/R3K2R").to_fen()
+            &Board::from_fen("r3k2r/8/3Q4/8/8/5q2/8/R3K2R")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "2K2r2/4P3/8/8/8/8/8/3k4",
-            &Board::from_fen("2K2r2/4P3/8/8/8/8/8/3k4").to_fen()
+            &Board::from_fen("2K2r2/4P3/8/8/8/8/8/3k4").unwrap().to_fen()
         );
         assert_eq!(
             "8/8/1P2K3/8/2n5/1q6/8/5k2",
-            &Board::from_fen("8/8/1P2K3/8/2n5/1q6/8/5k2").to_fen()
+            &Board::from_fen("8/8/1P2K3/8/2n5/1q6/8/5k2")
+                .unwrap()
+                .to_fen()
         );
         assert_eq!(
             "4k3/1P6/8/8/8/8/K7/8",
-            &Board::from_fen("4k3/1P6/8/8/8/8/K7/8").to_fen()
+            &Board::from_fen("4k3/1P6/8/8/8/8/K7/8").unwrap().to_fen()
         );
         assert_eq!(
             "8/P1k5/K7/8/8/8/8/8",
-            &Board::from_fen("8/P1k5/K7/8/8/8/8/8").to_fen()
+            &Board::from_fen("8/P1k5/K7/8/8/8/8/8").unwrap().to_fen()
         );
         assert_eq!(
             "K1k5/8/P7/8/8/8/8/8",
-            &Board::from_fen("K1k5/8/P7/8/8/8/8/8").to_fen()
+            &Board::from_fen("K1k5/8/P7/8/8/8/8/8").unwrap().to_fen()
         );
         assert_eq!(
             "8/k1P5/8/1K6/8/8/8/8",
-            &Board::from_fen("8/k1P5/8/1K6/8/8/8/8").to_fen()
+            &Board::from_fen("8/k1P5/8/1K6/8/8/8/8").unwrap().to_fen()
         );
         assert_eq!(
             "8/8/2k5/5q2/5n2/8/5K2/8",
-            &Board::from_fen("8/8/2k5/5q2/5n2/8/5K2/8").to_fen()
+            &Board::from_fen("8/8/2k5/5q2/5n2/8/5K2/8").unwrap().to_fen()
         );
     }
 

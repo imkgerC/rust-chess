@@ -81,7 +81,7 @@ impl Game {
         if parts.len() != 6 {
             return Err(ParserError::WrongParameterNumber);
         }
-        let board = Board::from_fen(parts[0]);
+        let board = Board::from_fen(parts[0])?;
 
         let color_to_move = match parts[1] {
             "w" => Color::White,
