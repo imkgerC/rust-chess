@@ -3,6 +3,8 @@
 //! This module contains helper functions and constants that are imporatant
 //! for working with bitboards without going insane.
 
+use super::ParserError;
+
 /// Returns a bitboard from a simple fen-like representation
 ///
 /// The representation needs to contain exactly 8 ranks, each delimited
@@ -72,77 +74,83 @@ pub fn from_repr(repr: &str) -> Result<u64, &str> {
             }
         }
     }
-    return Ok(ret);
+    Ok(ret)
 }
 
-pub fn index_to_field_repr(index: u8) -> String {
+pub fn index_to_field_repr(index: u8) -> Result<String, ParserError> {
     let mut ret = String::new();
     let file = index % 8;
     let rank = index / 8;
-    ret.push_str(file_to_str(file));
-    ret.push_str(rank_to_str(rank));
-    return ret;
+    ret.push_str(file_to_str(file)?);
+    ret.push_str(rank_to_str(rank)?);
+    Ok(ret)
 }
 
-pub fn field_repr_to_index(repr: &str) -> u8 {
+pub fn field_repr_to_index(repr: &str) -> Result<u8, ParserError> {
     let chars: Vec<char> = repr.chars().collect();
-    assert!(chars.len() == 2);
-    let index = str_to_rank(&chars[1].to_string()) * 8 + str_to_file(&chars[0].to_string());
-    return index;
+    if chars.len() != 2 {
+        return Err(ParserError::WrongParameterNumber);
+    }
+    let index = str_to_rank(&chars[1].to_string())? * 8 + str_to_file(chars[0])?;
+    Ok(index)
 }
 
-pub fn str_to_file(file: &str) -> u8 {
-    return match file {
-        "a" => 0,
-        "b" => 1,
-        "c" => 2,
-        "d" => 3,
-        "e" => 4,
-        "f" => 5,
-        "g" => 6,
-        "h" => 7,
-        _ => {
-            panic!("file is too big");
-        }
+pub fn str_to_file(file: char) -> Result<u8, ParserError> {
+    match file {
+        'a' => Ok(0),
+        'b' => Ok(1),
+        'c' => Ok(2),
+        'd' => Ok(3),
+        'e' => Ok(4),
+        'f' => Ok(5),
+        'g' => Ok(6),
+        'h' => Ok(7),
+        _ => Err(ParserError::InvalidParameter(
+            "File provided is unknown/invalid",
+        )),
+    }
+}
+
+pub fn file_to_str(file: u8) -> Result<&'static str, ParserError> {
+    match file {
+        0 => Ok("a"),
+        1 => Ok("b"),
+        2 => Ok("c"),
+        3 => Ok("d"),
+        4 => Ok("e"),
+        5 => Ok("f"),
+        6 => Ok("g"),
+        7 => Ok("h"),
+        _ => Err(ParserError::InvalidParameter("File is too big")),
+    }
+}
+
+pub fn str_to_rank(rank: &str) -> Result<u8, ParserError> {
+    let rank: u8 = if let Ok(rank) = rank.parse() {
+        rank
+    } else {
+        return Err(ParserError::InvalidParameter(
+            "Rank provided is not a number",
+        ));
     };
+    if !(rank <= 8 && rank > 0) {
+        return Err(ParserError::InvalidParameter("Rank is out of bounds"));
+    }
+    Ok(8 - rank)
 }
 
-pub fn file_to_str(file: u8) -> &'static str {
-    return match file {
-        0 => "a",
-        1 => "b",
-        2 => "c",
-        3 => "d",
-        4 => "e",
-        5 => "f",
-        6 => "g",
-        7 => "h",
-        _ => {
-            panic!("file is too big");
-        }
-    };
-}
-
-pub fn str_to_rank(rank: &str) -> u8 {
-    let rank: u8 = rank.parse().expect("rank provided is not a number");
-    assert!(rank <= 8 && rank > 0);
-    return 8 - rank;
-}
-
-pub fn rank_to_str(rank: u8) -> &'static str {
-    return match rank {
-        0 => "8",
-        1 => "7",
-        2 => "6",
-        3 => "5",
-        4 => "4",
-        5 => "3",
-        6 => "2",
-        7 => "1",
-        _ => {
-            panic!("file is too big");
-        }
-    };
+pub fn rank_to_str(rank: u8) -> Result<&'static str, ParserError> {
+    match rank {
+        0 => Ok("8"),
+        1 => Ok("7"),
+        2 => Ok("6"),
+        3 => Ok("5"),
+        4 => Ok("4"),
+        5 => Ok("3"),
+        6 => Ok("2"),
+        7 => Ok("1"),
+        _ => Err(ParserError::InvalidParameter("Rank is out of bounds")),
+    }
 }
 
 #[cfg(test)]
