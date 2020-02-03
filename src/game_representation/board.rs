@@ -73,7 +73,8 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// # use core::game_representation::{Board, Color, PieceType, Action};
+    /// # use core::game_representation::{Board, Color, PieceType};
+    /// # use core::move_generation::Action;
     /// let mut b = Board::startpos();
     /// let a = Action::new(4, 6, 4, 4, PieceType::Pawn, Color::White); // this is e2e4
     /// b.execute_action(&a);

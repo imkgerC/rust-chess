@@ -21,7 +21,7 @@ use super::ParserError;
 ///
 /// # Examples
 /// ```
-/// use core::game_representation::bitboard;
+/// use core::core::bitboard;
 ///
 /// // creates bitboard with 2 set bits in the second to top rank
 /// assert_eq!(bitboard::from_repr("8/0303/8/8/8/8/8/8").unwrap(), 4352);
