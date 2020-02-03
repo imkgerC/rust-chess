@@ -1,4 +1,6 @@
-use super::{bitboard, Action, Color, ParserError, PieceType};
+use super::{Color, PieceType};
+use crate::core::{bitboard, ParserError};
+use crate::move_generation::Action;
 
 /// The board part of a chess game state
 ///

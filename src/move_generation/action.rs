@@ -1,5 +1,4 @@
-pub use super::Color;
-pub use super::PieceType;
+pub use crate::game_representation::{Color, PieceType};
 
 /// A standard chess halfmove action.
 ///

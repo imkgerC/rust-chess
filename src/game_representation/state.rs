@@ -1,4 +1,5 @@
-use super::{bitboard, Board, Castling, Color, ParserError};
+use super::{Board, Castling, Color};
+use crate::core::{bitboard, ParserError};
 
 pub struct Game {
     // 50 move rule
