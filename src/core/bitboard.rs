@@ -77,6 +77,27 @@ pub fn from_repr(repr: &str) -> Result<u64, &str> {
     Ok(ret)
 }
 
+/// Returns the string representation for the given field index
+///
+/// The index is the shift by which you need to shift a 1 value to have a bitboard with only that field set.
+/// The index for any field can be seen on the following map:
+/// ```text
+///      a  b  c  d  e  f  g  h   
+///   +-------------------------+
+/// 8 |  0  1  2  3  4  5  6  7 | 8
+/// 7 |  8  9 10 11 12 13 14 15 | 7
+/// 6 | 16 17 18 19 20 21 22 23 | 6
+/// 5 | 24 25 26 27 28 29 30 31 | 5
+/// 4 | 32 33 34 35 36 37 38 39 | 4
+/// 3 | 40 41 42 43 44 45 46 47 | 3
+/// 2 | 48 49 50 51 52 53 54 55 | 2
+/// 1 | 56 57 58 59 60 61 62 63 | 1
+///   +-------------------------+
+///      a  b  c  d  e  f  g  h   
+/// ```
+///
+/// # Errors
+/// * when the index is bigger than 63
 pub fn index_to_field_repr(index: u8) -> Result<String, ParserError> {
     let mut ret = String::new();
     let file = index % 8;
@@ -86,6 +107,29 @@ pub fn index_to_field_repr(index: u8) -> Result<String, ParserError> {
     Ok(ret)
 }
 
+/// Returns the field index for the given string representation
+///
+/// The index is the shift by which you need to shift a 1 value to have a bitboard with only that field set.
+/// The index for any field can be seen on the following map:
+/// ```text
+///      a  b  c  d  e  f  g  h   
+///   +-------------------------+
+/// 8 |  0  1  2  3  4  5  6  7 | 8
+/// 7 |  8  9 10 11 12 13 14 15 | 7
+/// 6 | 16 17 18 19 20 21 22 23 | 6
+/// 5 | 24 25 26 27 28 29 30 31 | 5
+/// 4 | 32 33 34 35 36 37 38 39 | 4
+/// 3 | 40 41 42 43 44 45 46 47 | 3
+/// 2 | 48 49 50 51 52 53 54 55 | 2
+/// 1 | 56 57 58 59 60 61 62 63 | 1
+///   +-------------------------+
+///      a  b  c  d  e  f  g  h   
+/// ```
+///
+/// # Errors
+/// * if the repr string is not length 2
+/// * if the first character is not a number from the range 1-8
+/// * if the second character is not a letter from the range a-h
 pub fn field_repr_to_index(repr: &str) -> Result<u8, ParserError> {
     let chars: Vec<char> = repr.chars().collect();
     if chars.len() != 2 {
@@ -95,6 +139,15 @@ pub fn field_repr_to_index(repr: &str) -> Result<u8, ParserError> {
     Ok(index)
 }
 
+/// Returns the file number for the given file character
+///
+/// * 'a' -> 0
+/// * 'b' -> 1
+/// * 'c' -> 2
+/// * ...
+///
+/// # Errors
+/// * if the input character is not in the range 'a'-'h'
 pub fn str_to_file(file: char) -> Result<u8, ParserError> {
     match file {
         'a' => Ok(0),
@@ -111,6 +164,15 @@ pub fn str_to_file(file: char) -> Result<u8, ParserError> {
     }
 }
 
+/// Returns the file string for the given file number
+///
+/// * 0 -> "a"
+/// * 1 -> "b"
+/// * 2 -> "c"
+/// * ...
+///
+/// # Errors
+/// * if the input number is not in the range 0-7
 pub fn file_to_str(file: u8) -> Result<&'static str, ParserError> {
     match file {
         0 => Ok("a"),
@@ -125,6 +187,15 @@ pub fn file_to_str(file: u8) -> Result<&'static str, ParserError> {
     }
 }
 
+/// Returns the rank number for the given rank string
+///
+/// * "8" -> 0
+/// * "7" -> 1
+/// * "6" -> 2
+/// * ...
+///
+/// # Errors
+/// * if the input string is not in the range "1"-"8"
 pub fn str_to_rank(rank: &str) -> Result<u8, ParserError> {
     let rank: u8 = if let Ok(rank) = rank.parse() {
         rank
@@ -139,6 +210,15 @@ pub fn str_to_rank(rank: &str) -> Result<u8, ParserError> {
     Ok(8 - rank)
 }
 
+/// Returns the rank string for the given rank number
+///
+/// * 0 -> "8"
+/// * 1 -> "7"
+/// * 2 -> "6"
+/// * ...
+///
+/// # Errors
+/// * if the input number is not in the range 0-7
 pub fn rank_to_str(rank: u8) -> Result<&'static str, ParserError> {
     match rank {
         0 => Ok("8"),
@@ -209,5 +289,119 @@ mod tests {
     #[should_panic]
     fn repr_too_many_ranks() {
         from_repr("8/8/8/8/8/8/8/8/8/8/8").unwrap();
+    }
+
+    #[test]
+    fn file_or_rank_out_of_bounds() {
+        for x in 8..=255 {
+            if let Ok(_) = file_to_str(x) {
+                panic!("should not work");
+            }
+            if let Ok(_) = rank_to_str(x) {
+                panic!("should not work");
+            }
+        }
+    }
+
+    #[test]
+    fn file_or_rank_in_bounds() {
+        for x in 0..8 {
+            if let Err(_) = file_to_str(x) {
+                panic!("should not work");
+            }
+            if let Err(_) = rank_to_str(x) {
+                panic!("should not work");
+            }
+        }
+    }
+
+    #[test]
+    fn repr_file_rank_mapping() {
+        // rank to str
+        assert_eq!(rank_to_str(0).unwrap(), "8");
+        assert_eq!(rank_to_str(1).unwrap(), "7");
+        assert_eq!(rank_to_str(2).unwrap(), "6");
+        assert_eq!(rank_to_str(3).unwrap(), "5");
+        assert_eq!(rank_to_str(4).unwrap(), "4");
+        assert_eq!(rank_to_str(5).unwrap(), "3");
+        assert_eq!(rank_to_str(6).unwrap(), "2");
+        assert_eq!(rank_to_str(7).unwrap(), "1");
+
+        // str to rank
+        assert_eq!(str_to_rank("8").unwrap(), 0);
+        assert_eq!(str_to_rank("7").unwrap(), 1);
+        assert_eq!(str_to_rank("6").unwrap(), 2);
+        assert_eq!(str_to_rank("5").unwrap(), 3);
+        assert_eq!(str_to_rank("4").unwrap(), 4);
+        assert_eq!(str_to_rank("3").unwrap(), 5);
+        assert_eq!(str_to_rank("2").unwrap(), 6);
+        assert_eq!(str_to_rank("1").unwrap(), 7);
+
+        // file to str
+        assert_eq!(file_to_str(0).unwrap(), "a");
+        assert_eq!(file_to_str(1).unwrap(), "b");
+        assert_eq!(file_to_str(2).unwrap(), "c");
+        assert_eq!(file_to_str(3).unwrap(), "d");
+        assert_eq!(file_to_str(4).unwrap(), "e");
+        assert_eq!(file_to_str(5).unwrap(), "f");
+        assert_eq!(file_to_str(6).unwrap(), "g");
+        assert_eq!(file_to_str(7).unwrap(), "h");
+
+        // str to file
+        assert_eq!(str_to_file('a').unwrap(), 0);
+        assert_eq!(str_to_file('b').unwrap(), 1);
+        assert_eq!(str_to_file('c').unwrap(), 2);
+        assert_eq!(str_to_file('d').unwrap(), 3);
+        assert_eq!(str_to_file('e').unwrap(), 4);
+        assert_eq!(str_to_file('f').unwrap(), 5);
+        assert_eq!(str_to_file('g').unwrap(), 6);
+        assert_eq!(str_to_file('h').unwrap(), 7);
+    }
+
+    #[test]
+    fn field_repr_in_bounds() {
+        for index in 0..64 {
+            if let Err(_) = index_to_field_repr(index) {
+                panic!("should not work");
+            }
+        }
+    }
+
+    #[test]
+    fn field_repr_out_of_bounds() {
+        for index in 64..=255 {
+            if let Ok(_) = index_to_field_repr(index) {
+                panic!("should not work");
+            }
+        }
+    }
+
+    #[test]
+    fn field_repr_mapping() {
+        assert_eq!(index_to_field_repr(0).unwrap(), "a8");
+        assert_eq!(index_to_field_repr(63).unwrap(), "h1");
+        assert_eq!(index_to_field_repr(32).unwrap(), "a4");
+        assert_eq!(index_to_field_repr(26).unwrap(), "c5");
+        assert_eq!(index_to_field_repr(58).unwrap(), "c1");
+        assert_eq!(index_to_field_repr(48).unwrap(), "a2");
+        assert_eq!(index_to_field_repr(13).unwrap(), "f7");
+
+        assert_eq!(field_repr_to_index("a8").unwrap(), 0);
+        assert_eq!(field_repr_to_index("h1").unwrap(), 63);
+        assert_eq!(field_repr_to_index("a4").unwrap(), 32);
+        assert_eq!(field_repr_to_index("c5").unwrap(), 26);
+        assert_eq!(field_repr_to_index("c1").unwrap(), 58);
+        assert_eq!(field_repr_to_index("a2").unwrap(), 48);
+        assert_eq!(field_repr_to_index("f7").unwrap(), 13);
+    }
+
+    #[test]
+    fn field_repr_io_test() {
+        for index in 0..64 {
+            assert_eq!(
+                field_repr_to_index(&index_to_field_repr(index).unwrap()).unwrap(),
+                index
+            );
+        }
     }
 }
