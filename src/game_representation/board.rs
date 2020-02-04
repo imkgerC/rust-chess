@@ -74,13 +74,13 @@ impl Board {
     /// # Examples
     /// ```
     /// # use core::game_representation::{Board, Color, PieceType};
-    /// # use core::move_generation::Action;
+    /// # use core::move_generation::{Action, ActionType};
     /// let mut b = Board::startpos();
-    /// let a = Action::new(4, 6, 4, 4, PieceType::Pawn, Color::White); // this is e2e4
-    /// b.execute_action(&a);
+    /// let a = Action::new((4, 6), (4, 4), PieceType::Pawn, ActionType::Quiet); // this is e2e4
+    /// b.execute_action(&a, Color::White);
     /// assert_eq!("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
     /// ```
-    pub fn execute_action(&mut self, action: &Action) {
+    pub fn execute_action(&mut self, action: &Action, color: Color) {
         // assumes action is legal
         let (from_x, from_y) = action.get_from();
         let (to_x, to_y) = action.get_to();
@@ -88,7 +88,6 @@ impl Board {
         let shift_to = to_x + to_y * 8;
         let not_from_bit = !(1 << shift_from);
         let not_to_bit = !(1 << shift_to);
-        let color = action.get_color();
         let piecetype = action.get_piecetype();
 
         let pawn_to_bit = ((piecetype == PieceType::Pawn) as u64) << shift_to;
@@ -332,22 +331,23 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::move_generation::ActionType;
 
     #[test]
     fn wikipedia_fen_opening_test() {
         // moves and fens taken from wikipedia [https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation]
         let mut b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR").unwrap();
-        let a = Action::new(4, 6, 4, 4, PieceType::Pawn, Color::White);
-        b.execute_action(&a);
+        let a = Action::new((4, 6), (4, 4), PieceType::Pawn, ActionType::Quiet);
+        b.execute_action(&a, Color::White);
         assert_eq!("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR", &b.to_fen());
-        let a = Action::new(2, 1, 2, 3, PieceType::Pawn, Color::Black);
-        b.execute_action(&a);
+        let a = Action::new((2, 1), (2, 3), PieceType::Pawn, ActionType::Quiet);
+        b.execute_action(&a, Color::Black);
         assert_eq!(
             "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR",
             &b.to_fen()
         );
-        let a = Action::new(6, 7, 5, 5, PieceType::Knight, Color::White);
-        b.execute_action(&a);
+        let a = Action::new((6, 7), (5, 5), PieceType::Knight, ActionType::Quiet);
+        b.execute_action(&a, Color::White);
         assert_eq!(
             "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R",
             &b.to_fen()

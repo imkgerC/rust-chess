@@ -1,3 +1,3 @@
 mod action;
 
-pub use action::Action;
+pub use action::{Action, ActionType};
