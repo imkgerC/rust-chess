@@ -1,6 +1,6 @@
 use super::{Color, PieceType};
 use crate::core::{bitboard, ParserError};
-use crate::move_generation::Action;
+use crate::move_generation::{Action, ActionType};
 
 /// The board part of a chess game state
 ///
@@ -62,14 +62,12 @@ impl Board {
         }
     }
 
-    /// This method will execute any action on the board, using only the information inside
-    /// the action. It will not check, if this move is legal in any way: USE WITH CAUTION.
+    /// This method will execute any action on the board.
+    /// It will not check, if this move is legal in any way: USE WITH CAUTION.
     /// There are not tests to look if a particular field even has the needed piece, if it does not,
     /// this piece will be created from thin air.
     /// There is no checking if a check occurs through this action or king is captured or a king is even
     /// on the board.
-    ///
-    /// Currently does not support promotions or castling.
     ///
     /// # Examples
     /// ```
@@ -82,10 +80,8 @@ impl Board {
     /// ```
     pub fn execute_action(&mut self, action: &Action, color: Color) {
         // assumes action is legal
-        let (from_x, from_y) = action.get_from();
-        let (to_x, to_y) = action.get_to();
-        let shift_from = from_x + from_y * 8;
-        let shift_to = to_x + to_y * 8;
+        let shift_from = action.get_from_index();
+        let shift_to = action.get_to_index();
         let not_from_bit = !(1 << shift_from);
         let not_to_bit = !(1 << shift_to);
         let piecetype = action.get_piecetype();
@@ -122,6 +118,83 @@ impl Board {
         self.whites |= white_to_bit;
         self.rooks |= rook_to_bit;
         self.bishops |= bishop_to_bit;
+
+        // we need to do extra stuff if it is a castling move or a promotion move
+        match action.get_action_type() {
+            ActionType::Promotion(promotion_piece)
+            | ActionType::PromotionCapture(promotion_piece, _) => {
+                self.pawns &= not_to_bit; // promotions always happen w/ pawns so delete the moved pawn
+                                          // can only be knight, bishop, rook, or queen
+                let knight_to_bit = ((promotion_piece == PieceType::Knight) as u64) << shift_to;
+                let bishop_to_bit = ((promotion_piece == PieceType::Bishop
+                    || promotion_piece == PieceType::Queen)
+                    as u64)
+                    << shift_to;
+                let rook_to_bit = ((promotion_piece == PieceType::Rook
+                    || promotion_piece == PieceType::Queen)
+                    as u64)
+                    << shift_to;
+                // insert new promoted piece to to_field
+                self.knights |= knight_to_bit;
+                self.rooks |= rook_to_bit;
+                self.bishops |= bishop_to_bit;
+            }
+            ActionType::Castling(is_kingside_castling) => {
+                // castling already has the king set correctly so only move the rook
+                // branching is fine, as this case is already so rare
+                match color {
+                    Color::White => {
+                        if is_kingside_castling {
+                            // rook is moved from h1 to f1 always
+                            let not_from_bit =
+                                !(1u64 << bitboard::field_repr_to_index("h1").expect("is checked"));
+                            let to_bit =
+                                1u64 << bitboard::field_repr_to_index("f1").expect("is checked");
+                            self.whites &= not_from_bit;
+                            self.rooks &= not_from_bit;
+                            self.whites |= to_bit;
+                            self.rooks |= to_bit;
+                        } else {
+                            // rook is moved from a1 to d1 always
+                            let not_from_bit =
+                                !(1u64 << bitboard::field_repr_to_index("a1").expect("is checked"));
+                            let to_bit =
+                                1u64 << bitboard::field_repr_to_index("d1").expect("is checked");
+                            self.whites &= not_from_bit;
+                            self.rooks &= not_from_bit;
+                            self.whites |= to_bit;
+                            self.rooks |= to_bit;
+                        }
+                    }
+                    Color::Black => {
+                        if is_kingside_castling {
+                            // rook is moved from h8 to f8 always
+                            let not_from_bit =
+                                !(1u64 << bitboard::field_repr_to_index("h8").expect("is checked"));
+                            let to_bit =
+                                1u64 << bitboard::field_repr_to_index("f8").expect("is checked");
+                            self.whites &= not_from_bit;
+                            self.rooks &= not_from_bit;
+                            self.whites |= to_bit;
+                            self.rooks |= to_bit;
+                        } else {
+                            // rook is moved from a8 to d8 always
+                            let not_from_bit =
+                                !(1u64 << bitboard::field_repr_to_index("a8").expect("is checked"));
+                            let to_bit =
+                                1u64 << bitboard::field_repr_to_index("d8").expect("is checked");
+                            self.whites &= not_from_bit;
+                            self.rooks &= not_from_bit;
+                            self.whites |= to_bit;
+                            self.rooks |= to_bit;
+                        }
+                    }
+                }
+            }
+            _ => {
+                // don't need to do anything for captures or quiet moves
+            }
+        };
     }
 
     /// Returns the board-part of a FEN-string
