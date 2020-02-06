@@ -1,5 +1,6 @@
-use super::{Board, Castling, Color};
+use super::{Board, Castling, Color, PieceType};
 use crate::core::{bitboard, ParserError};
+use crate::move_generation::{Action, ActionType};
 
 pub struct Game {
     // 50 move rule
@@ -74,6 +75,59 @@ impl Game {
         ret.push_str(&format!("{}", self.full_move_clock));
 
         ret
+    }
+
+    pub fn execute_action(&mut self, action: &Action) {
+        self.board.execute_action(action, self.color_to_move);
+
+        match action.get_action_type() {
+            ActionType::Castling(_) => match self.color_to_move {
+                Color::White => {
+                    self.castling
+                        .remove(Castling::get_white_kingside() | Castling::get_white_queenside());
+                }
+                Color::Black => {
+                    self.castling
+                        .remove(Castling::get_black_kingside() | Castling::get_black_queenside());
+                }
+            },
+            ActionType::Capture(_) => {
+                // reset 50 move rule
+                self.half_move_clock = 0;
+            }
+            _ => {}
+        };
+        self.en_passant = 255;
+        match action.get_piecetype() {
+            PieceType::King => {
+                match self.color_to_move {
+                    Color::White => {
+                        self.castling.remove(
+                            Castling::get_white_kingside() | Castling::get_white_queenside(),
+                        );
+                    }
+                    Color::Black => {
+                        self.castling.remove(
+                            Castling::get_black_kingside() | Castling::get_black_queenside(),
+                        );
+                    }
+                };
+            }
+            PieceType::Pawn => {
+                // reset 50 move rule
+                self.half_move_clock = 0;
+                // set en passant if appropriate
+                if i8::abs((action.get_to_index() as i8) - (action.get_from_index() as i8)) == 16 {
+                    let color_sign = -(self.color_to_move as i8);
+                    self.en_passant = (action.get_from_index() as i8 + (color_sign * 8)) as u8;
+                }
+            }
+            _ => {}
+        };
+
+        self.full_move_clock += self.color_to_move as u32;
+        self.color_to_move = self.color_to_move.get_opponent_color();
+        self.half_move_clock += 1;
     }
 
     pub fn from_fen(fen: &str) -> Result<Game, ParserError> {
