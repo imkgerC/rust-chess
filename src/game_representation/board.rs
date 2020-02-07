@@ -175,7 +175,6 @@ impl Board {
                                 1u64 << bitboard::field_repr_to_index("f8").expect("is checked");
                             self.whites &= not_from_bit;
                             self.rooks &= not_from_bit;
-                            self.whites |= to_bit;
                             self.rooks |= to_bit;
                         } else {
                             // rook is moved from a8 to d8 always
@@ -185,7 +184,6 @@ impl Board {
                                 1u64 << bitboard::field_repr_to_index("d8").expect("is checked");
                             self.whites &= not_from_bit;
                             self.rooks &= not_from_bit;
-                            self.whites |= to_bit;
                             self.rooks |= to_bit;
                         }
                     }

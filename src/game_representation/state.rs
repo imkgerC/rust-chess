@@ -78,6 +78,7 @@ impl Game {
     }
 
     pub fn execute_action(&mut self, action: &Action) {
+        self.half_move_clock += 1;
         self.board.execute_action(action, self.color_to_move);
 
         match action.get_action_type() {
@@ -97,6 +98,7 @@ impl Game {
             }
             _ => {}
         };
+
         self.en_passant = 255;
         match action.get_piecetype() {
             PieceType::King => {
@@ -118,8 +120,8 @@ impl Game {
                 self.half_move_clock = 0;
                 // set en passant if appropriate
                 if i8::abs((action.get_to_index() as i8) - (action.get_from_index() as i8)) == 16 {
-                    let color_sign = -(self.color_to_move as i8);
-                    self.en_passant = (action.get_from_index() as i8 + (color_sign * 8)) as u8;
+                    let color_sign = (-(self.color_to_move as i8)) * 2 + 1;
+                    self.en_passant = (action.get_to_index() as i8 + (color_sign * 8)) as u8;
                 }
             }
             _ => {}
@@ -127,7 +129,6 @@ impl Game {
 
         self.full_move_clock += self.color_to_move as u32;
         self.color_to_move = self.color_to_move.get_opponent_color();
-        self.half_move_clock += 1;
     }
 
     pub fn from_fen(fen: &str) -> Result<Game, ParserError> {
@@ -218,6 +219,143 @@ mod tests {
             &state.to_fen(),
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
         );
+    }
+
+    #[test]
+    fn castling_test() {
+        /*let mut state = Game::from_fen("rnbqkbnr/1ppppppp/7B/p7/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2").unwrap();
+        do_action(&mut state, "a8", "a7",PieceType::Rook, ActionType::Quiet);
+        assert_eq!(state.to_fen(), "1nbqkbnr/rppppppp/7B/p7/3P4/8/PPP1PPPP/RN1QKBNR w KQk - 0 3");*/
+        let mut state =
+            Game::from_fen("1nbqkb1r/rpppp1pp/5n1B/p4p2/3P4/2NQ4/PPP1PPPP/R3KBNR w KQk - 2 5")
+                .unwrap();
+        do_action(
+            &mut state,
+            "e1",
+            "c1",
+            PieceType::King,
+            ActionType::Castling(false),
+        );
+        assert_eq!(
+            state.to_fen(),
+            "1nbqkb1r/rpppp1pp/5n1B/p4p2/3P4/2NQ4/PPP1PPPP/2KR1BNR b k - 3 5"
+        );
+        let mut state =
+            Game::from_fen("1nbqk2r/rppp2pp/3b1n1B/p2Ppp2/4N3/3Q4/PPP1PPPP/2KR1BNR b k - 2 7")
+                .unwrap();
+        do_action(
+            &mut state,
+            "e8",
+            "g8",
+            PieceType::King,
+            ActionType::Castling(true),
+        );
+        assert_eq!(
+            state.to_fen(),
+            "1nbq1rk1/rppp2pp/3b1n1B/p2Ppp2/4N3/3Q4/PPP1PPPP/2KR1BNR w - - 3 8"
+        );
+    }
+
+    #[test]
+    fn sicilian_schevengen() {
+        let mut state = Game::startpos();
+        do_action(&mut state, "e2", "e4", PieceType::Pawn, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        );
+        do_action(&mut state, "c7", "c5", PieceType::Pawn, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2"
+        );
+        do_action(&mut state, "g1", "f3", PieceType::Knight, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
+        );
+        do_action(&mut state, "d7", "d6", PieceType::Pawn, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkbnr/pp2pppp/3p4/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 3"
+        );
+        do_action(&mut state, "d2", "d4", PieceType::Pawn, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkbnr/pp2pppp/3p4/2p5/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq d3 0 3"
+        );
+        do_action(
+            &mut state,
+            "c5",
+            "d4",
+            PieceType::Pawn,
+            ActionType::Capture(PieceType::Pawn),
+        );
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkbnr/pp2pppp/3p4/8/3pP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 4"
+        );
+        do_action(
+            &mut state,
+            "f3",
+            "d4",
+            PieceType::Knight,
+            ActionType::Capture(PieceType::Pawn),
+        );
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkbnr/pp2pppp/3p4/8/3NP3/8/PPP2PPP/RNBQKB1R b KQkq - 0 4"
+        );
+        do_action(&mut state, "g8", "f6", PieceType::Knight, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkb1r/pp2pppp/3p1n2/8/3NP3/8/PPP2PPP/RNBQKB1R w KQkq - 1 5"
+        );
+        do_action(&mut state, "b1", "c3", PieceType::Knight, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkb1r/pp2pppp/3p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R b KQkq - 2 5"
+        );
+        do_action(&mut state, "e7", "e6", PieceType::Pawn, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "rnbqkb1r/pp3ppp/3ppn2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 6"
+        );
+    }
+
+    #[test]
+    fn unrealistic_endgame_promotion_test() {
+        let mut state = Game::from_fen("4k3/p1p5/8/7p/P7/3PP2P/4K1pP/1R6 b - - 1 26").unwrap();
+        do_action(
+            &mut state,
+            "g2",
+            "g1",
+            PieceType::Pawn,
+            ActionType::Promotion(PieceType::Queen),
+        );
+        assert_eq!(
+            state.to_fen(),
+            "4k3/p1p5/8/7p/P7/3PP2P/4K2P/1R4q1 w - - 0 27"
+        );
+        let mut state = Game::from_fen("4k3/p7/8/P6p/8/3PP2P/2p1K2P/1R6 b - - 0 31").unwrap();
+        do_action(
+            &mut state,
+            "c2",
+            "b1",
+            PieceType::Pawn,
+            ActionType::PromotionCapture(PieceType::Knight, PieceType::Rook),
+        );
+        assert_eq!(state.to_fen(), "4k3/p7/8/P6p/8/3PP2P/4K2P/1n6 w - - 0 32");
+    }
+
+    fn do_action(state: &mut Game, from: &str, to: &str, piece: PieceType, actiontype: ActionType) {
+        let action = Action::new(
+            bitboard::field_repr_to_coords(from).expect("could not convert repr"),
+            bitboard::field_repr_to_coords(to).expect("could not convert repr"),
+            piece,
+            actiontype,
+        );
+        state.execute_action(&action);
     }
 
     #[test]

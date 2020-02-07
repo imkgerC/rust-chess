@@ -34,7 +34,7 @@ pub enum ActionType {
 }
 
 impl Action {
-    pub fn new(from: (u8, u8), to: (u8, u8), piece: PieceType, piecetype: ActionType) -> Action {
+    pub fn new(from: (u8, u8), to: (u8, u8), piece: PieceType, actiontype: ActionType) -> Action {
         let (from_x, from_y) = from;
         let (to_x, to_y) = to;
         assert!(from_x < 8);
@@ -45,7 +45,7 @@ impl Action {
 
         let mut special = 0;
         let is_castling;
-        match piecetype {
+        match actiontype {
             ActionType::Quiet => {
                 is_castling = 0;
             }

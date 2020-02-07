@@ -139,6 +139,17 @@ pub fn field_repr_to_index(repr: &str) -> Result<u8, ParserError> {
     Ok(index)
 }
 
+pub fn field_repr_to_coords(repr: &str) -> Result<(u8, u8), ParserError> {
+    index_to_coords(field_repr_to_index(repr)?)
+}
+
+pub fn index_to_coords(index: u8) -> Result<(u8, u8), ParserError> {
+    if index > 63 {
+        return Err(ParserError::InvalidParameter("index too high"));
+    }
+    Ok((index % 8, index / 8))
+}
+
 /// Returns the file number for the given file character
 ///
 /// * 'a' -> 0
