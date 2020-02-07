@@ -115,6 +115,27 @@ impl Game {
                     }
                 };
             }
+            PieceType::Rook => {
+                let (x, y) = action.get_from();
+                match self.color_to_move {
+                    Color::White => {
+                        if x == 0 && y == 7 {
+                            self.castling.remove(Castling::get_white_queenside());
+                        }
+                        if x == 7 && y == 7 {
+                            self.castling.remove(Castling::get_white_kingside());
+                        }
+                    }
+                    Color::Black => {
+                        if x == 0 && y == 0 {
+                            self.castling.remove(Castling::get_black_queenside());
+                        }
+                        if x == 7 && y == 0 {
+                            self.castling.remove(Castling::get_black_kingside());
+                        }
+                    }
+                };
+            }
             PieceType::Pawn => {
                 // reset 50 move rule
                 self.half_move_clock = 0;
@@ -223,9 +244,13 @@ mod tests {
 
     #[test]
     fn castling_test() {
-        /*let mut state = Game::from_fen("rnbqkbnr/1ppppppp/7B/p7/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2").unwrap();
-        do_action(&mut state, "a8", "a7",PieceType::Rook, ActionType::Quiet);
-        assert_eq!(state.to_fen(), "1nbqkbnr/rppppppp/7B/p7/3P4/8/PPP1PPPP/RN1QKBNR w KQk - 0 3");*/
+        let mut state =
+            Game::from_fen("rnbqkbnr/1ppppppp/7B/p7/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 1 2").unwrap();
+        do_action(&mut state, "a8", "a7", PieceType::Rook, ActionType::Quiet);
+        assert_eq!(
+            state.to_fen(),
+            "1nbqkbnr/rppppppp/7B/p7/3P4/8/PPP1PPPP/RN1QKBNR w KQk - 2 3"
+        );
         let mut state =
             Game::from_fen("1nbqkb1r/rpppp1pp/5n1B/p4p2/3P4/2NQ4/PPP1PPPP/R3KBNR w KQk - 2 5")
                 .unwrap();
