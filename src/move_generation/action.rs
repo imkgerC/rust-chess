@@ -3,8 +3,8 @@ pub use crate::game_representation::{Color, PieceType};
 /// A standard chess halfmove action.
 ///
 /// This struct contains a two byte representation of a move in chess. It only contains the moved piece type,
-/// the color of the playing player and from and to squares. Currently it does not support pawn promotions or castling.
-/// The internal structure will be subject to change and currently is as follows:
+/// castling information, capture information, promotion information, from and to squares.
+/// The internal structure can be subject to change and is currently as follows:
 /// from_byte:
 /// bit 0-2 => from_x
 /// bit 3-5 => from_y
@@ -17,14 +17,22 @@ pub use crate::game_representation::{Color, PieceType};
 /// special_byte:
 /// bit 0: is_capture
 /// bit 1: is_promotion
-/// bit 2-4: promotion_type, if not castling, else castling in bit 2
-/// bit 5-7: capture_type
+/// bit 2-4: capture_type, if capture, else is_kingside_castling in bit 2
+/// bit 5-7: promotion_type
 pub struct Action {
     from: u8,
     to: u8,
     special: u8,
 }
 
+/// A basic enum describing an action with further special information
+///
+/// Each enum has a different type of parameters:
+/// * Quiet: No further data
+/// * Capture: The captured piece
+/// * Promotion: The type that is promoted to
+/// * PromotionCapture: The type that is promoted to and the captured piece
+#[derive(Debug, PartialEq)]
 pub enum ActionType {
     Quiet,
     Capture(PieceType),
@@ -34,6 +42,19 @@ pub enum ActionType {
 }
 
 impl Action {
+    /// Returns a new Action struct with the corresponding values
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_from(), (0,6));
+    /// ```
     pub fn new(from: (u8, u8), to: (u8, u8), piece: PieceType, actiontype: ActionType) -> Action {
         let (from_x, from_y) = from;
         let (to_x, to_y) = to;
@@ -78,32 +99,119 @@ impl Action {
         }
     }
 
+    /// Returns the coordinates moved from
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_from(), (0,6));
+    /// ```
     #[inline(always)]
     pub fn get_from(&self) -> (u8, u8) {
         (self.from & 0b111, (self.from >> 3) & 0b111)
     }
 
+    /// Returns the coordinates moved to
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_to(), (0,7));
+    /// ```
     #[inline(always)]
     pub fn get_to(&self) -> (u8, u8) {
         (self.to & 0b111, (self.to >> 3) & 0b111)
     }
 
+    /// Returns the index moved from
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_from_index(), 48);
+    /// ```
     #[inline(always)]
     pub fn get_from_index(&self) -> u8 {
         self.from & 0b11_1111
     }
 
+    /// Returns the index moved to
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_to_index(), 56);
+    /// ```
     #[inline(always)]
     pub fn get_to_index(&self) -> u8 {
         self.to & 0b11_1111
     }
 
+    /// Returns the moved piece
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_piecetype(), PieceType::Pawn);
+    /// ```
     #[inline(always)]
     pub fn get_piecetype(&self) -> PieceType {
         let piece = (self.from >> 6) | ((self.to >> 5) & 0b100);
         unsafe { std::mem::transmute(piece) }
     }
 
+    /// Returns a fully filled ActionType enum for the action
+    ///
+    /// Gives you any information you may need except for the from_square, to_square
+    /// and the moved piece. This method is always safe to call and will return valid data.
+    /// This means, if the move is of type:
+    /// * Quiet: Nothing else
+    /// * Capture: The captured piece
+    /// * Promotion: The piece that was promoted to
+    /// * PromotionCapture: The piece that was promoted to and the captured piece
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (4,7),
+    ///     (2,7),
+    ///     PieceType::King,
+    ///     ActionType::PromotionCapture(PieceType::Knight, PieceType::Queen));
+    /// assert_eq!(action.get_action_type(),
+    ///     ActionType::PromotionCapture(PieceType::Knight, PieceType::Queen));
+    /// ```
     #[inline(always)]
     pub fn get_action_type(&self) -> ActionType {
         if self.is_capture() && self.is_promotion() {
@@ -130,26 +238,100 @@ impl Action {
         }
     }
 
+    /// Checks if the action is a castling move
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (4,7),
+    ///     (2,7),
+    ///     PieceType::King,
+    ///     ActionType::Castling(false));
+    /// assert_eq!(action.is_castling(), true);
     #[inline(always)]
     pub fn is_castling(&self) -> bool {
         self.to & 0b100_0000 > 0
     }
 
+    /// Checks if the action is kingside castling
+    ///
+    /// ATTENTION: If the action this is called on is not actually a castling move, then this will return part of the capture piece information
+    /// which may or may not be set. Behaviour in that case is not guaranteed and can be subject to change!
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (4,7),
+    ///     (2,7),
+    ///     PieceType::King,
+    ///     ActionType::Castling(false));
+    /// assert_eq!(action.is_kingside_castling(), false);
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Capture(PieceType::Knight));
+    /// // action is not a castling move right now, thus the method call is bad
+    /// assert_eq!(action.is_kingside_castling(), true); // DO NOT DO THAT
     #[inline(always)]
     pub fn is_kingside_castling(&self) -> bool {
         self.special & 0b100 > 0
     }
 
+    /// Checks if the action is a capture
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Rook,
+    ///     ActionType::Capture(PieceType::Rook));
+    /// assert_eq!(action.is_capture(), true);
     #[inline(always)]
     pub fn is_capture(&self) -> bool {
         self.special & 0b1 > 0
     }
 
+    /// Checks if the action is a promotion
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.is_promotion(), true);
+    /// ```
     #[inline(always)]
     pub fn is_promotion(&self) -> bool {
         self.special & 0b10 > 0
     }
 
+    /// Returns the promoted piece if it is a promotion, else None
+    ///
+    /// This method can always be called and does both checking if it is a promotion and retrieving the piecetype information
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,6),
+    ///     (0,7),
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_promotion_piece(), Some(PieceType::Rook));
+    /// ```
     #[inline(always)]
     pub fn get_promotion_piece(&self) -> Option<PieceType> {
         if !self.is_promotion() {
@@ -158,6 +340,21 @@ impl Action {
         Some(unsafe { std::mem::transmute((self.special >> 5) & 0b111) })
     }
 
+    /// Returns the captured piece if it is a capture, else None
+    ///
+    /// This method can always be called and does both checking if it is a capture and retrieving the piecetype information
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new(
+    ///     (0,0),
+    ///     (7,7),
+    ///     PieceType::Queen,
+    ///     ActionType::Capture(PieceType::Rook));
+    /// assert_eq!(action.get_capture_piece(), Some(PieceType::Rook));
+    /// ```
     #[inline(always)]
     pub fn get_capture_piece(&self) -> Option<PieceType> {
         if !self.is_capture() {
