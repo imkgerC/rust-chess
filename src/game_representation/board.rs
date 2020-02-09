@@ -348,10 +348,22 @@ impl Board {
         })
     }
 
+    /// [`get_piecestr_at`] for coordinates instead of shift index
+    ///
+    /// [`get_piecestr_at`]: #method.get_piecestr_at
     fn get_piecestr_on(&self, file: u8, rank: u8) -> &str {
         self.get_piecestr_at(rank * 8 + file)
     }
 
+    /// Returns the string representation at the given shift index
+    ///
+    /// Returns for every piecetype (Black/White):
+    /// * Pawn: p/P
+    /// * Knight: n/N
+    /// * King: k/K
+    /// * Bishop: b/B
+    /// * Rook: r/R
+    /// * Queen: q/Q
     fn get_piecestr_at(&self, shift: u8) -> &str {
         if self.pawns >> shift & 1 == 1 {
             if self.whites >> shift & 1 == 1 {
@@ -388,12 +400,6 @@ impl Board {
                 return "R";
             }
             return "r";
-        }
-        if self.kings >> shift & 1 == 1 {
-            if self.whites >> shift & 1 == 1 {
-                return "K";
-            }
-            return "k";
         }
         ""
     }

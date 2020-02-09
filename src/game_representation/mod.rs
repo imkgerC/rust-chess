@@ -1,3 +1,5 @@
+//! All code related to representing the game of chess
+
 mod board;
 mod castling;
 mod color;

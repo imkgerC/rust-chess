@@ -2,6 +2,9 @@ use super::{Board, Castling, Color, PieceType};
 use crate::core::{bitboard, ParserError};
 use crate::move_generation::{Action, ActionType};
 
+/// Basic representation of a chess game
+///
+/// Holds all information needed for a chess game except for repetition information.
 pub struct Game {
     // 50 move rule
     half_move_clock: u8,
@@ -14,6 +17,7 @@ pub struct Game {
 }
 
 impl Game {
+    /// Returns a game struct containing the canonical starting position of chess
     pub fn startpos() -> Game {
         Game {
             half_move_clock: 0,
@@ -25,6 +29,7 @@ impl Game {
         }
     }
 
+    /// Returns the Forsyth-Edwards Notation representation of the given struct
     pub fn to_fen(&self) -> String {
         let mut ret = self.board.to_fen();
         ret.push_str(" ");
@@ -77,6 +82,10 @@ impl Game {
         ret
     }
 
+    /// Executes the given action on the state
+    ///
+    /// Does not check if the action is legal or sensible. Corrupt game states can be provoked
+    /// by executing this method with non-legal actions.
     pub fn execute_action(&mut self, action: &Action) {
         self.half_move_clock += 1;
         self.board.execute_action(action, self.color_to_move);
@@ -152,6 +161,15 @@ impl Game {
         self.color_to_move = self.color_to_move.get_opponent_color();
     }
 
+    /// Returns a game struct from a Forsyth-Edwards Notation representation
+    ///
+    /// # Errors
+    /// * There are not exactly 6 parts split by spaces
+    /// * The supplied color is not 'w' or 'b'
+    /// * The supplied board representation is not valid
+    /// * The en passant information can not be parsed
+    /// * The castling information contains any character other than 'K', 'Q', 'k', 'q' or '-'
+    /// * The full move or half move is not a number
     pub fn from_fen(fen: &str) -> Result<Game, ParserError> {
         // parts: 0|board 1|color 2|castling 3|en_passant 4|half_move 5|full_move
         let parts: Vec<&str> = fen.split(' ').collect();
