@@ -5,6 +5,28 @@
 
 use super::ParserError;
 
+pub static RANKS: [u64; 8] = [
+    18374686479671623680,
+    71776119061217280,
+    280375465082880,
+    1095216660480,
+    4278190080,
+    16711680,
+    65280,
+    255,
+];
+
+pub static FILES: [u64; 8] = [
+    72340172838076673,
+    144680345676153346,
+    289360691352306692,
+    578721382704613384,
+    1157442765409226768,
+    2314885530818453536,
+    4629771061636907072,
+    9259542123273814144,
+];
+
 /// Returns a bitboard from a simple fen-like representation
 ///
 /// The representation needs to contain exactly 8 ranks, each delimited
@@ -105,6 +127,26 @@ pub fn index_to_field_repr(index: u8) -> Result<String, ParserError> {
     ret.push_str(file_to_str(file)?);
     ret.push_str(rank_to_str(rank)?);
     Ok(ret)
+}
+
+#[inline(always)]
+pub fn bitboard_north(board: u64, amount: u8) -> u64 {
+    board >> (8 * amount)
+}
+
+#[inline(always)]
+pub fn bitboard_south(board: u64, amount: u8) -> u64 {
+    board << (8 * amount)
+}
+
+#[inline(always)]
+pub fn bitboard_east_one(board: u64) -> u64 {
+    (board & !FILES[7]) << 1
+}
+
+#[inline(always)]
+pub fn bitboard_west_one(board: u64) -> u64 {
+    (board & !FILES[0]) >> 1
 }
 
 /// Returns the field index for the given string representation
@@ -247,6 +289,25 @@ pub fn rank_to_str(rank: u8) -> Result<&'static str, ParserError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bitboard_shifts() {
+        let initial = 1 << field_repr_to_index("e2").unwrap();
+        assert_eq!(
+            index_to_field_repr(bitboard_north(initial, 3).trailing_zeros() as u8).unwrap(),
+            "e5"
+        );
+        assert_eq!(bitboard_south(initial, 3), 0);
+        assert_eq!(bitboard_north(initial, 7), 0);
+        assert_eq!(
+            index_to_field_repr(bitboard_south(initial, 1).trailing_zeros() as u8).unwrap(),
+            "e1"
+        );
+        assert_eq!(
+            index_to_field_repr(bitboard_east_one(initial).trailing_zeros() as u8).unwrap(),
+            "f2"
+        );
+    }
 
     #[test]
     fn parsing_repr() {
