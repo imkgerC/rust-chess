@@ -62,6 +62,11 @@ impl Action {
         assert!(to_x < 8);
         assert!(from_y < 8);
         assert!(to_y < 8);
+        Action::new_from_index(from_x + from_y*8, to_x + to_y*8, piece, actiontype)
+    }
+
+    /// Returns a new Action struct with the corresponding values
+    pub fn new_from_index(from: u8, to: u8, piece: PieceType, actiontype: ActionType) -> Action {
         let piece = piece as u8;
 
         let mut special = 0;
@@ -93,8 +98,8 @@ impl Action {
         }
 
         Action {
-            from: from_x | (from_y << 3) | (piece << 6),
-            to: (to_x + (to_y << 3)) | ((piece << 5) & 0b1000_0000) | (is_castling << 6),
+            from: from | (piece << 6),
+            to: to | ((piece << 5) & 0b1000_0000) | (is_castling << 6),
             special,
         }
     }
