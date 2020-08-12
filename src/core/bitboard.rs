@@ -5,27 +5,33 @@
 
 use super::ParserError;
 
-pub static RANKS: [u64; 8] = [
-    18374686479671623680,
-    71776119061217280,
-    280375465082880,
-    1095216660480,
-    4278190080,
-    16711680,
-    65280,
-    255,
-];
+pub mod constants {
+    //! This module contains all constants for working with bitboards
 
-pub static FILES: [u64; 8] = [
-    72340172838076673,
-    144680345676153346,
-    289360691352306692,
-    578721382704613384,
-    1157442765409226768,
-    2314885530818453536,
-    4629771061636907072,
-    9259542123273814144,
-];
+    /// Bitboard of ones for a given rank, index is rank - 1
+    pub static RANKS: [u64; 8] = [
+        18374686479671623680,
+        71776119061217280,
+        280375465082880,
+        1095216660480,
+        4278190080,
+        16711680,
+        65280,
+        255,
+    ];
+
+    /// Bitboard of ones for a given file, index is a = 0, b = 1, ...
+    pub static FILES: [u64; 8] = [
+        72340172838076673,
+        144680345676153346,
+        289360691352306692,
+        578721382704613384,
+        1157442765409226768,
+        2314885530818453536,
+        4629771061636907072,
+        9259542123273814144,
+    ];
+}
 
 /// Returns a bitboard from a simple fen-like representation
 ///
@@ -129,24 +135,38 @@ pub fn index_to_field_repr(index: u8) -> Result<String, ParserError> {
     Ok(ret)
 }
 
+/// Moves all pieces on the bitboard north by the amount
+///
+/// Pieces will be happily shifted away if shifted of the board
+/// Is useless if the amount is 8 or greater, might lead to undefined behaviour in the future
 #[inline(always)]
 pub fn bitboard_north(board: u64, amount: u8) -> u64 {
     board >> (8 * amount)
 }
 
+/// Moves all pieces on the bitboard south by the amount
+///
+/// Pieces will be happily shifted away if shifted of the board
+/// Is useless if the amount is 8 or greater, might lead to undefined behaviour in the future
 #[inline(always)]
 pub fn bitboard_south(board: u64, amount: u8) -> u64 {
     board << (8 * amount)
 }
 
+/// Moves all pieces on the bitboard east by one
+///
+/// Overflow is cared for, pieces will be shifted away if shifted over the border
 #[inline(always)]
 pub fn bitboard_east_one(board: u64) -> u64 {
-    (board & !FILES[7]) << 1
+    (board & !constants::FILES[7]) << 1
 }
 
+/// Moves all pieces on the bitboard east by one
+///
+/// Overflow is cared for, pieces will be shifted away if shifted over the border
 #[inline(always)]
 pub fn bitboard_west_one(board: u64) -> u64 {
-    (board & !FILES[0]) >> 1
+    (board & !constants::FILES[0]) >> 1
 }
 
 /// Returns the field index for the given string representation
@@ -181,10 +201,12 @@ pub fn field_repr_to_index(repr: &str) -> Result<u8, ParserError> {
     Ok(index)
 }
 
+/// Parses a san field representation to the corresponding coordinates
 pub fn field_repr_to_coords(repr: &str) -> Result<(u8, u8), ParserError> {
     index_to_coords(field_repr_to_index(repr)?)
 }
 
+/// Parses a field index and returns the coordinates
 pub fn index_to_coords(index: u8) -> Result<(u8, u8), ParserError> {
     if index > 63 {
         return Err(ParserError::InvalidParameter("index too high"));
