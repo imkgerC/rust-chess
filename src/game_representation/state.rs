@@ -9,8 +9,8 @@ pub struct Game {
     // 50 move rule
     half_move_clock: u8,
     full_move_clock: u32,
-    color_to_move: Color,
-    board: Board,
+    pub color_to_move: Color,
+    pub board: Board,
     // shift index of en_passant square, if available; 255 otherwise
     en_passant: u8,
     castling: Castling,

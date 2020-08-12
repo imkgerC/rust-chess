@@ -1,5 +1,8 @@
 pub use crate::game_representation::{Color, PieceType};
 
+use crate::core::{bitboard, ParserError};
+use crate::game_representation::Game;
+
 /// A standard chess halfmove action.
 ///
 /// This struct contains a two byte representation of a move in chess. It only contains the moved piece type,
@@ -62,6 +65,10 @@ impl Action {
         assert!(to_x < 8);
         assert!(from_y < 8);
         assert!(to_y < 8);
+        return Action::new_from_index(from_x + 8 * from_y, to_x + 8 * to_y, piece, actiontype);
+    }
+
+    pub fn new_from_index(from: u8, to: u8, piece: PieceType, actiontype: ActionType) -> Action {
         let piece = piece as u8;
 
         let mut special = 0;
@@ -93,10 +100,50 @@ impl Action {
         }
 
         Action {
-            from: from_x | (from_y << 3) | (piece << 6),
-            to: (to_x + (to_y << 3)) | ((piece << 5) & 0b1000_0000) | (is_castling << 6),
+            from: from | (piece << 6),
+            to: to | ((piece << 5) & 0b1000_0000) | (is_castling << 6),
             special,
         }
+    }
+
+    pub fn from_pgn(pgn_string: &str, state: &mut Game) -> Result<Action, ParserError> {
+        if pgn_string == "0-0" || pgn_string == "O-O" {
+            // kingside castling
+            let color = state.color_to_move as u8;
+            return Ok(Action::new_from_index(
+                60 - color * 56,
+                63 - color * 56,
+                PieceType::King,
+                ActionType::Castling(true),
+            ));
+        }
+        if pgn_string == "0-0-0" || pgn_string == "O-O-O" {
+            // queenside castling
+            let color = state.color_to_move as u8;
+            return Ok(Action::new_from_index(
+                60 - color * 56,
+                56 - color * 56,
+                PieceType::King,
+                ActionType::Castling(true),
+            ));
+        }
+        if pgn_string.len() == 2 {
+            // simple pawn push
+            let to_index = bitboard::field_repr_to_index(pgn_string)?;
+            let color_sign = (-(state.color_to_move as i8)) * 2 + 1;
+            let mut index_delta = 8 * color_sign;
+            if (1 << (to_index as i8 + index_delta)) & state.board.pawns == 0 {
+                index_delta *= 2;
+            }
+            let from_index = (to_index as i8 + index_delta) as u8;
+            return Ok(Action::new_from_index(
+                from_index,
+                to_index,
+                PieceType::Pawn,
+                ActionType::Quiet,
+            ));
+        }
+        unimplemented!();
     }
 
     /// Returns the coordinates moved from

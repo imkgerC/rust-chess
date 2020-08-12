@@ -24,12 +24,12 @@ use crate::move_generation::{Action, ActionType};
 ///      a  b  c  d  e  f  g  h        a   b   c   d   e   f   g   h
 /// ```
 pub struct Board {
-    bishops: u64,
-    rooks: u64,
-    knights: u64,
-    whites: u64,
-    pawns: u64,
-    kings: u64,
+    pub bishops: u64,
+    pub rooks: u64,
+    pub knights: u64,
+    pub whites: u64,
+    pub pawns: u64,
+    pub kings: u64,
 }
 
 impl Board {
