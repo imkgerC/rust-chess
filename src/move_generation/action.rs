@@ -1,7 +1,7 @@
-pub use crate::game_representation::{Color, PieceType};
+pub use crate::game_representation::{Color, Game, PieceType};
 
 use crate::core::{bitboard, ParserError};
-use crate::game_representation::Game;
+use crate::move_generation::pseudolegal;
 
 /// A standard chess halfmove action.
 ///
@@ -68,6 +68,7 @@ impl Action {
         return Action::new_from_index(from_x + 8 * from_y, to_x + 8 * to_y, piece, actiontype);
     }
 
+    /// todo: testing
     pub fn new_from_index(from: u8, to: u8, piece: PieceType, actiontype: ActionType) -> Action {
         let piece = piece as u8;
 
@@ -106,7 +107,8 @@ impl Action {
         }
     }
 
-    pub fn from_pgn(pgn_string: &str, state: &mut Game) -> Result<Action, ParserError> {
+    /// todo: testing
+    pub fn from_pgn(pgn_string: &str, state: &Game) -> Result<Action, ParserError> {
         if pgn_string == "0-0" || pgn_string == "O-O" {
             // kingside castling
             let color = state.color_to_move as u8;
@@ -143,7 +145,142 @@ impl Action {
                 ActionType::Quiet,
             ));
         }
-        unimplemented!();
+        if pgn_string.len() < 2 {
+            return Err(ParserError::InvalidParameter("Wrong length of pgn action"));
+        }
+        let mut chars = pgn_string.chars().collect::<Vec<_>>();
+        let piece;
+        if chars[0].is_uppercase() {
+            piece = bitboard::char_to_piecetype(chars[0])?;
+            chars.remove(0);
+        } else {
+            piece = PieceType::Pawn;
+        }
+        if chars.len() < 2 {
+            return Err(ParserError::InvalidParameter("Wrong length of pgn action"));
+        }
+
+        // promotion
+        let promotion_piece;
+        if chars[chars.len() - 2] == '=' {
+            promotion_piece = Some(bitboard::char_to_piecetype(chars[chars.len() - 1])?);
+            chars.remove(chars.len() - 1);
+            chars.remove(chars.len() - 1);
+        } else {
+            promotion_piece = None;
+        }
+
+        let to_rank = bitboard::str_to_rank(&chars[chars.len() - 1].to_string())?;
+        let to_file = bitboard::str_to_file(chars[chars.len() - 2])?;
+        chars.remove(chars.len() - 1);
+        chars.remove(chars.len() - 1);
+
+        let capture_index = chars
+            .iter()
+            .enumerate()
+            .map(|(i, c)| if *c == 'x' { Some(i) } else { None })
+            .fold(None, |a, b| if a.is_none() { b } else { a });
+        let is_capture = capture_index.is_some();
+        if is_capture {
+            chars.remove(capture_index.expect("Was checked, can't happen"));
+        }
+
+        let from_rank;
+        let from_file;
+        if chars.len() == 2 {
+            // fully specified
+            from_file = bitboard::str_to_file(chars[0])?;
+            from_rank = bitboard::str_to_rank(&chars[1].to_string())?;
+        } else if chars.len() == 1 {
+            if chars[0].is_numeric() {
+                // rank specified
+                from_rank = bitboard::str_to_rank(&chars[0].to_string())?;
+                let to_index = to_file + to_rank * 8;
+                let destination = 1 << (to_index);
+                let mask = pseudolegal::can_be_attacked_from(destination, piece, state)
+                    | bitboard::constants::RANKS[from_rank as usize];
+                if mask.count_ones() != 1 {
+                    return Err(ParserError::InvalidParameter(
+                        "Multiple options for source square found",
+                    ));
+                }
+                let from_index = mask.trailing_zeros() as u8;
+                if from_rank != from_index / 8 {
+                    return Err(ParserError::InvalidParameter(
+                        "Source square is not on same rank as specified",
+                    ));
+                }
+                from_file = from_index % 8;
+            } else {
+                // file specified
+                from_file = bitboard::str_to_file(chars[0])?;
+                let to_index = to_file + to_rank * 8;
+                let destination = 1 << (to_index);
+                let mask = pseudolegal::can_be_attacked_from(destination, piece, state)
+                    | bitboard::constants::FILES[from_file as usize];
+                if mask.count_ones() != 1 {
+                    return Err(ParserError::InvalidParameter(
+                        "Multiple options for source square found",
+                    ));
+                }
+                let from_index = mask.trailing_zeros() as u8;
+                if from_file != from_index % 8 {
+                    return Err(ParserError::InvalidParameter(
+                        "Source square is not on same file as specified",
+                    ));
+                }
+                from_rank = from_index / 8;
+            }
+        } else {
+            // no specification
+            let to_index = to_file + to_rank * 8;
+            let destination = 1 << (to_index);
+            let mask = pseudolegal::can_be_attacked_from(destination, piece, state);
+            if mask.count_ones() != 1 {
+                return Err(ParserError::InvalidParameter(
+                    "Multiple options for source square found",
+                ));
+            }
+            let from_index = mask.trailing_zeros() as u8;
+            from_rank = from_index / 8;
+            from_file = from_index % 8;
+        }
+
+        let action_type;
+        if promotion_piece.is_some() && is_capture {
+            // promotion capture
+            let capture_piece = state.board.get_piecetype_on(to_rank * 8 + to_file);
+            if capture_piece.is_none() {
+                return Err(ParserError::InvalidParameter(
+                    "No piece to capture on destination",
+                ));
+            }
+            action_type = ActionType::PromotionCapture(
+                promotion_piece.expect("Cannot happen, checked"),
+                capture_piece.expect("Cannot happend, checked"),
+            );
+        } else if promotion_piece.is_some() {
+            // promotion
+            action_type = ActionType::Promotion(promotion_piece.expect("Cannot happen, checked"));
+        } else if is_capture {
+            // capture
+            let capture_piece = state.board.get_piecetype_on(to_rank * 8 + to_file);
+            if capture_piece.is_none() {
+                return Err(ParserError::InvalidParameter(
+                    "No piece to capture on destination",
+                ));
+            }
+            action_type = ActionType::Capture(capture_piece.expect("Was checked, can't happen"));
+        } else {
+            // quiet
+            action_type = ActionType::Quiet;
+        }
+        Ok(Action::new(
+            (from_file, from_rank),
+            (to_file, to_rank),
+            piece,
+            action_type,
+        ))
     }
 
     /// Returns the coordinates moved from

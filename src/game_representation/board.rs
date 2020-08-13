@@ -348,6 +348,29 @@ impl Board {
         })
     }
 
+    /// todo: tests
+    pub fn get_piecetype_on(&self, index: u8) -> Option<PieceType> {
+        if self.pawns >> index & 1 == 1 {
+            return Some(PieceType::Pawn);
+        }
+        if self.knights >> index & 1 == 1 {
+            return Some(PieceType::Knight);
+        }
+        if self.kings >> index & 1 == 1 {
+            return Some(PieceType::King);
+        }
+        if self.bishops >> index & 1 == 1 {
+            if self.rooks >> index & 1 == 1 {
+                return Some(PieceType::Queen);
+            }
+            return Some(PieceType::Bishop);
+        }
+        if self.rooks >> index & 1 == 1 {
+            return Some(PieceType::Rook);
+        }
+        None
+    }
+
     /// [`get_piecestr_at`] for coordinates instead of shift index
     ///
     /// [`get_piecestr_at`]: #method.get_piecestr_at

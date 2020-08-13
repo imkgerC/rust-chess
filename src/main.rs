@@ -1,10 +1,12 @@
 extern crate core;
 
 fn main() {
-    let b = core::game_representation::Board::startpos();
-    println!("{}", b.to_fen());
-    let b =
-        core::game_representation::Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
-            .unwrap();
-    println!("{}", b.to_fen());
+    let mut g = core::game_representation::Game::startpos();
+    let a = core::move_generation::Action::from_pgn("e2e4", &g).unwrap();
+    g.execute_action(&a);
+    let a = core::move_generation::Action::from_pgn("c5", &g).unwrap();
+    g.execute_action(&a);
+    let a = core::move_generation::Action::from_pgn("Nf3", &g).unwrap();
+    g.execute_action(&a);
+    println!("{}", g.to_fen());
 }
