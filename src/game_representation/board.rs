@@ -348,7 +348,14 @@ impl Board {
         })
     }
 
-    /// todo: tests
+    /// Returns the piecetype of the given index
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::{Board, PieceType};
+    /// let b = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR").unwrap();
+    /// assert_eq!(b.get_piecetype_on(59), Some(PieceType::Queen));
+    /// ```
     pub fn get_piecetype_on(&self, index: u8) -> Option<PieceType> {
         if self.pawns >> index & 1 == 1 {
             return Some(PieceType::Pawn);

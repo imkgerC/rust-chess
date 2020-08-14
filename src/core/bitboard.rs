@@ -510,7 +510,15 @@ pub fn rank_to_str(rank: u8) -> Result<&'static str, ParserError> {
     }
 }
 
-/// todo: testing
+/// Returns the Piecetype for a given uppercase char
+/// # Errors
+/// * if the input is not one of KNBQR
+/// # Examples
+/// ```
+/// # use core::core::bitboard;
+/// # use core::game_representation::PieceType;
+/// assert_eq!(bitboard::char_to_piecetype('Q').unwrap(), PieceType::Queen);
+/// ```
 pub fn char_to_piecetype(c: char) -> Result<PieceType, ParserError> {
     match c {
         'K' => Ok(PieceType::King),
@@ -711,5 +719,27 @@ mod tests {
                 index
             );
         }
+    }
+
+    #[test]
+    fn char_to_piecetype_test() {
+        use super::super::super::game_representation::PieceType;
+        assert_eq!(char_to_piecetype('K').unwrap(), PieceType::King);
+        assert_eq!(char_to_piecetype('Q').unwrap(), PieceType::Queen);
+        assert_eq!(char_to_piecetype('B').unwrap(), PieceType::Bishop);
+        assert_eq!(char_to_piecetype('R').unwrap(), PieceType::Rook);
+        assert_eq!(char_to_piecetype('N').unwrap(), PieceType::Knight);
+
+        assert!(char_to_piecetype('E').is_err());
+        assert!(char_to_piecetype('1').is_err());
+        assert!(char_to_piecetype('3').is_err());
+        assert!(char_to_piecetype('e').is_err());
+        assert!(char_to_piecetype('ö').is_err());
+        assert!(char_to_piecetype('w').is_err());
+        assert!(char_to_piecetype('5').is_err());
+        assert!(char_to_piecetype('d').is_err());
+        assert!(char_to_piecetype('1').is_err());
+        assert!(char_to_piecetype('g').is_err());
+        assert!(char_to_piecetype('z').is_err());
     }
 }

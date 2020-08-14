@@ -22,6 +22,7 @@ use crate::move_generation::pseudolegal;
 /// bit 1: is_promotion
 /// bit 2-4: capture_type, if capture, else is_kingside_castling in bit 2
 /// bit 5-7: promotion_type
+#[derive(PartialEq)]
 pub struct Action {
     from: u8,
     to: u8,
@@ -68,7 +69,19 @@ impl Action {
         return Action::new_from_index(from_x + 8 * from_y, to_x + 8 * to_y, piece, actiontype);
     }
 
-    /// todo: testing
+    /// Returns a new Action struct with the corresponding values
+    ///
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::PieceType;
+    /// # use core::move_generation::{ActionType, Action};
+    /// let action = Action::new_from_index(
+    ///     8,
+    ///     0,
+    ///     PieceType::Pawn,
+    ///     ActionType::Promotion(PieceType::Rook));
+    /// assert_eq!(action.get_from(), (0,1));
+    /// ```
     pub fn new_from_index(from: u8, to: u8, piece: PieceType, actiontype: ActionType) -> Action {
         let piece = piece as u8;
 
@@ -107,8 +120,13 @@ impl Action {
         }
     }
 
-    /// todo: testing
-    pub fn from_pgn(pgn_string: &str, state: &Game) -> Result<Action, ParserError> {
+    /// Returns an action for the given SAN string
+    ///
+    /// # Examples
+    /// # use core::game_representation::{Action, Game};
+    /// let a = Action::from_san("e2e4", &Game::startpos());
+    /// assert_eq!(a.get_from(), (4, 6));
+    pub fn from_san(pgn_string: &str, state: &Game) -> Result<Action, ParserError> {
         if pgn_string == "0-0" || pgn_string == "O-O" {
             // kingside castling
             let color = state.color_to_move as u8;
@@ -548,6 +566,16 @@ impl Action {
     }
 }
 
+impl std::fmt::Debug for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Point")
+            .field("from", &self.from)
+            .field("to", &self.to)
+            .field("special", &self.special)
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -580,5 +608,38 @@ mod tests {
         assert_eq!(action.is_capture(), true);
         assert_eq!(action.get_capture_piece(), Some(PieceType::Knight));
         assert_eq!(action.get_promotion_piece(), Some(PieceType::Queen));
+    }
+
+    #[test]
+    fn test_san_parsing() {
+        use super::super::super::game_representation::{Game, PieceType};
+        let g = Game::startpos();
+        assert_eq!(
+            Action::from_san("e4", &g).unwrap(),
+            Action::new(
+                bitboard::field_repr_to_coords("e2").expect("could not convert repr"),
+                bitboard::field_repr_to_coords("e4").expect("could not convert repr"),
+                PieceType::Pawn,
+                ActionType::Quiet,
+            )
+        );
+        assert_eq!(
+            Action::from_san("Nf3", &g).unwrap(),
+            Action::new(
+                bitboard::field_repr_to_coords("g1").expect("could not convert repr"),
+                bitboard::field_repr_to_coords("f3").expect("could not convert repr"),
+                PieceType::Knight,
+                ActionType::Quiet,
+            )
+        );
+        assert_eq!(
+            Action::from_san("a2a3", &g).unwrap(),
+            Action::new(
+                bitboard::field_repr_to_coords("a2").expect("could not convert repr"),
+                bitboard::field_repr_to_coords("a3").expect("could not convert repr"),
+                PieceType::Pawn,
+                ActionType::Quiet,
+            )
+        );
     }
 }
