@@ -59,17 +59,11 @@ pub fn can_be_attacked_from(destination: u64, piece: PieceType, state: &Game) ->
             mask*/
             bitboard::constants::KNIGHT_MASKS[index as usize] & state.board.knights
         }
-        PieceType::Rook => {
-            let index = destination.trailing_zeros();
-            bitboard::constants::ROOK_RAYS[index as usize] & state.board.rooks
-        }
-        PieceType::Bishop => {
-            let index = destination.trailing_zeros();
-            bitboard::constants::BISHOP_RAYS[index as usize] & state.board.bishops
-        }
+        PieceType::Rook => rook_rays(destination, state) & !state.board.bishops,
+        PieceType::Bishop => bishop_rays(destination, state) & !&state.board.rooks,
         PieceType::Queen => {
-            can_be_attacked_from(destination, PieceType::Bishop, state)
-                | can_be_attacked_from(destination, PieceType::Queen, state)
+            let queens = state.board.bishops & state.board.rooks;
+            (bishop_rays(destination, state) | rook_rays(destination, state)) & queens
         }
     };
     if state.color_to_move == Color::White {
@@ -77,4 +71,72 @@ pub fn can_be_attacked_from(destination: u64, piece: PieceType, state: &Game) ->
     } else {
         attacked & !state.board.whites
     }
+}
+
+fn bishop_rays(field: u64, state: &Game) -> u64 {
+    let all_pieces = state.board.bishops
+        | state.board.rooks
+        | state.board.pawns
+        | state.board.knights
+        | state.board.kings;
+    let own_pieces;
+    if state.color_to_move == Color::White {
+        own_pieces = all_pieces & state.board.whites;
+    } else {
+        own_pieces = all_pieces & !state.board.whites;
+    }
+    let empty = !all_pieces;
+    let mut mask = 0;
+    let mut fill = field;
+    while fill != mask {
+        mask |= fill;
+        let left_right = bitboard::bitboard_east_one(mask) | bitboard::bitboard_west_one(mask);
+        fill = (bitboard::bitboard_north(left_right, 1)
+            | bitboard::bitboard_south(left_right, 1)
+            | mask)
+            & (empty | field);
+    }
+    let left_right = bitboard::bitboard_east_one(mask) | bitboard::bitboard_west_one(mask);
+    fill = (bitboard::bitboard_north(left_right, 1) | bitboard::bitboard_south(left_right, 1))
+        & own_pieces;
+    mask |= fill;
+    mask & state.board.bishops
+}
+
+fn rook_rays(field: u64, state: &Game) -> u64 {
+    let all_pieces = state.board.bishops
+        | state.board.rooks
+        | state.board.pawns
+        | state.board.knights
+        | state.board.kings;
+    let own_pieces;
+    if state.color_to_move == Color::White {
+        own_pieces = all_pieces & state.board.whites;
+    } else {
+        own_pieces = all_pieces & !state.board.whites;
+    }
+    let empty = !all_pieces;
+    let mut mask = 0;
+    let mut fill = field;
+    while fill != mask {
+        mask |= fill;
+        fill = (bitboard::bitboard_north(mask, 1) | bitboard::bitboard_south(mask, 1) | mask)
+            & (empty | field);
+    }
+    fill = (bitboard::bitboard_north(mask, 1) | bitboard::bitboard_south(mask, 1)) & own_pieces;
+    mask |= fill;
+
+    let mut lr_mask = 0;
+    let mut fill = field;
+    while fill != lr_mask {
+        lr_mask |= fill;
+        fill =
+            (bitboard::bitboard_east_one(lr_mask) | bitboard::bitboard_west_one(lr_mask) | lr_mask)
+                & (empty | field);
+    }
+    fill =
+        (bitboard::bitboard_east_one(lr_mask) | bitboard::bitboard_west_one(lr_mask)) & own_pieces;
+    lr_mask |= fill;
+
+    (mask | lr_mask) & state.board.rooks
 }

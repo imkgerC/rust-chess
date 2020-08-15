@@ -132,7 +132,7 @@ impl Action {
             let color = state.color_to_move as u8;
             return Ok(Action::new_from_index(
                 60 - color * 56,
-                63 - color * 56,
+                62 - color * 56,
                 PieceType::King,
                 ActionType::Castling(true),
             ));
@@ -142,7 +142,7 @@ impl Action {
             let color = state.color_to_move as u8;
             return Ok(Action::new_from_index(
                 60 - color * 56,
-                56 - color * 56,
+                58 - color * 56,
                 PieceType::King,
                 ActionType::Castling(true),
             ));
@@ -216,7 +216,7 @@ impl Action {
                 let to_index = to_file + to_rank * 8;
                 let destination = 1 << (to_index);
                 let mask = pseudolegal::can_be_attacked_from(destination, piece, state)
-                    | bitboard::constants::RANKS[from_rank as usize];
+                    & bitboard::constants::RANKS[from_rank as usize];
                 if mask.count_ones() != 1 {
                     return Err(ParserError::InvalidParameter(
                         "Multiple options for source square found",
@@ -235,7 +235,7 @@ impl Action {
                 let to_index = to_file + to_rank * 8;
                 let destination = 1 << (to_index);
                 let mask = pseudolegal::can_be_attacked_from(destination, piece, state)
-                    | bitboard::constants::FILES[from_file as usize];
+                    & bitboard::constants::FILES[from_file as usize];
                 if mask.count_ones() != 1 {
                     return Err(ParserError::InvalidParameter(
                         "Multiple options for source square found",

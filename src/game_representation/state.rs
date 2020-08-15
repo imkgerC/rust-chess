@@ -245,6 +245,51 @@ impl Game {
             color_to_move,
         })
     }
+
+    /// Returns game from a given pgn string
+    ///
+    /// is very naive
+    /// # Examples
+    /// ```
+    /// # use core::game_representation::Game;
+    /// assert_eq!(
+    ///     Game::from_pgn(
+    ///         r#"[Event "?"]
+    ///            [Site "?"]
+    ///            [Date "????.??.??"]
+    ///            [Round "?"]
+    ///            [White "?"]
+    ///            [Black "?"]
+    ///            [Result "*"]
+    ///            
+    ///            1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 g6 6. Be3 Bg7 7. f3 O-O 8. Qd2 Nc6 *"#
+    ///     )
+    ///     .unwrap()
+    ///     .to_fen(),
+    ///     "r1bq1rk1/pp2ppbp/2np1np1/8/3NP3/2N1BP2/PPPQ2PP/R3KB1R w KQ - 3 9"
+    /// );
+    /// ```
+    pub fn from_pgn(pgn_string: &str) -> Result<Game, ParserError> {
+        let mut g = Game::startpos();
+        // discard everything before first move
+        let parts = pgn_string.split("]").collect::<Vec<_>>();
+        let pgn_string = parts[parts.len() - 1];
+
+        let full_moves = pgn_string.split(".").skip(1);
+        for full_move in full_moves {
+            let half_moves: Vec<_> = full_move.split(" ").skip(1).collect();
+
+            if half_moves.len() > 0 {
+                let a = Action::from_san(half_moves[0], &g)?;
+                g.execute_action(&a);
+            }
+            if half_moves.len() > 1 {
+                let a = Action::from_san(half_moves[1], &g)?;
+                g.execute_action(&a);
+            }
+        }
+        Ok(g)
+    }
 }
 
 #[cfg(test)]
@@ -363,6 +408,60 @@ mod tests {
         assert_eq!(
             state.to_fen(),
             "rnbqkb1r/pp3ppp/3ppn2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 6"
+        );
+    }
+
+    #[test]
+    fn test_pgn_reading() {
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                    
+                   1. e4 c5 2. Nf3 Nc6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 e5 6. Ndb5 d6 7. Bg5 a6 8. Na3 b5 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r1bqkb1r/5ppp/p1np1n2/1p2p1B1/4P3/N1N5/PPP2PPP/R2QKB1R w KQkq b6 0 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r1bq1rk1/2p1bppp/p1np1n2/1p2p3/4P3/1BP2N2/PP1P1PPP/RNBQR1K1 w - - 1 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 g6 6. Be3 Bg7 7. f3 O-O 8. Qd2 Nc6 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r1bq1rk1/pp2ppbp/2np1np1/8/3NP3/2N1BP2/PPPQ2PP/R3KB1R w KQ - 3 9"
         );
     }
 
