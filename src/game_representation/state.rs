@@ -463,6 +463,142 @@ mod tests {
             .to_fen(),
             "r1bq1rk1/pp2ppbp/2np1np1/8/3NP3/2N1BP2/PPPQ2PP/R3KB1R w KQ - 3 9"
         );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O Nc6 8. d5 Ne7 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r1bq1rk1/ppp1npbp/3p1np1/3Pp3/2P1P3/2N2N2/PP2BPPP/R1BQ1RK1 w - - 1 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Nxe4 6. d4 b5 7. Bb3 d5 8. dxe5 Be6 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r2qkb1r/2p2ppp/p1n1b3/1p1pP3/4n3/1B3N2/PPP2PPP/RNBQ1RK1 w kq - 1 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 e6 2. d4 d5 3. Nd2 Nf6 4. e5 Nfd7 5. Bd3 c5 6. c3 Nc6 7. Ne2 cxd4 8. cxd4 f6 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r1bqkb1r/pp1n2pp/2n1pp2/3pP3/3P4/3B4/PP1NNPPP/R1BQK2R w KQkq - 0 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O 8. c3 d5 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r1bq1rk1/2p1bppp/p1n2n2/1p1pp3/4P3/1BP2N2/PP1P1PPP/RNBQR1K1 w - d6 0 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Bg5 e6 7. f4 Be7 8. Qf3 Qc7 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "rnb1k2r/1pq1bppp/p2ppn2/6B1/3NPP2/2N2Q2/PPP3PP/R3KB1R w KQkq - 3 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 c6 2. d4 d5 3. Nc3 dxe4 4. Nxe4 Bf5 5. Ng3 Bg6 6. h4 h6 7. Nf3 Nd7 8. h5 Bh7 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r2qkbnr/pp1npppb/2p4p/7P/3P4/5NN1/PPP2PP1/R1BQKB1R w KQkq - 1 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 O-O 8. c3 d6 *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "r1bq1rk1/2p1bppp/p1np1n2/1p2p3/4P3/1BP2N2/PP1P1PPP/RNBQR1K1 w - - 0 9"
+        );
+
+        assert_eq!(
+            Game::from_pgn(
+                r#"[Event "?"]
+                   [Site "?"]
+                   [Date "????.??.??"]
+                   [Round "?"]
+                   [White "?"]
+                   [Black "?"]
+                   [Result "*"]
+                   
+                   1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be2 e5 7. Nb3 Be7 8. O-O O-O *"#
+            )
+            .unwrap()
+            .to_fen(),
+            "rnbq1rk1/1p2bppp/p2p1n2/4p3/4P3/1NN5/PPP1BPPP/R1BQ1RK1 w - - 4 9"
+        );
     }
 
     #[test]

@@ -4,7 +4,7 @@ This repository contains for now numerous functions related to playing chess and
 
 ## Roadmap
 - [x] FEN I/O
-- [ ] Move playing
+- [x] Move playing
 - [ ] Move generation
 - [ ] Basic MCTS
 - [ ] ...
