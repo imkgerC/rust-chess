@@ -1,7 +1,7 @@
 pub use crate::game_representation::{Color, Game, PieceType};
 
 use crate::core::{bitboard, ParserError};
-use crate::move_generation::pseudolegal;
+use crate::move_generation::movegen;
 
 /// A standard chess halfmove action.
 ///
@@ -215,7 +215,7 @@ impl Action {
                 from_rank = bitboard::str_to_rank(&chars[0].to_string())?;
                 let to_index = to_file + to_rank * 8;
                 let destination = 1 << (to_index);
-                let mask = pseudolegal::can_be_attacked_from(destination, piece, state)
+                let mask = movegen::can_be_attacked_from(destination, piece, state)
                     & bitboard::constants::RANKS[from_rank as usize];
                 if mask.count_ones() != 1 {
                     return Err(ParserError::InvalidParameter(
@@ -234,7 +234,7 @@ impl Action {
                 from_file = bitboard::str_to_file(chars[0])?;
                 let to_index = to_file + to_rank * 8;
                 let destination = 1 << (to_index);
-                let mask = pseudolegal::can_be_attacked_from(destination, piece, state)
+                let mask = movegen::can_be_attacked_from(destination, piece, state)
                     & bitboard::constants::FILES[from_file as usize];
                 if mask.count_ones() != 1 {
                     return Err(ParserError::InvalidParameter(
@@ -253,7 +253,7 @@ impl Action {
             // no specification
             let to_index = to_file + to_rank * 8;
             let destination = 1 << (to_index);
-            let mask = pseudolegal::can_be_attacked_from(destination, piece, state);
+            let mask = movegen::can_be_attacked_from(destination, piece, state);
             if mask.count_ones() != 1 {
                 return Err(ParserError::InvalidParameter(
                     "Multiple options for source square found",
@@ -568,11 +568,13 @@ impl Action {
 
 impl std::fmt::Debug for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Point")
-            .field("from", &self.from)
-            .field("to", &self.to)
-            .field("special", &self.special)
-            .finish()
+        let s = format!(
+            "{}{}{}",
+            bitboard::piecetype_to_char(self.get_piecetype()),
+            bitboard::index_to_field_repr(self.get_from_index()).unwrap(),
+            bitboard::index_to_field_repr(self.get_to_index()).unwrap()
+        );
+        f.write_str(&s)
     }
 }
 

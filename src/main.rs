@@ -14,4 +14,10 @@ fn main() {
     )
     .unwrap();
     println!("{}", g.to_fen());
+    println!(
+        "{:?}",
+        core::move_generation::movegen::all_moves::<
+            core::move_generation::core::WhiteMoveGenColor,
+        >(0, false, &core::game_representation::Game::startpos())
+    );
 }

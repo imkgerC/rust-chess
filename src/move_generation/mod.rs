@@ -1,7 +1,7 @@
 //! All code related to move generation and representation
 
 mod action;
-mod core;
-mod pseudolegal;
+pub mod core;
+pub mod movegen;
 
 pub use action::{Action, ActionType};
